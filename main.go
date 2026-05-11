@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	swaggerFiles "github.com/swaggo/files"
@@ -376,6 +377,8 @@ func main() {
 
 	// Setup Gin router
 	router := gin.Default()
+
+	router.Use(cors.Default())
 
 	// API routes
 	api := router.Group("/api/v1")
