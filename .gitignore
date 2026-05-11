@@ -1,0 +1,22 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+main
+like-api
+
+# IDE
+.idea/
+.vscode/
+.DS_Store
+
+# Environment
+.env
+
+# Logs
+*.log
+
+# Go workspace
+go.work
+go.work.sum
