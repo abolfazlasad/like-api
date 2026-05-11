@@ -7,18 +7,18 @@ import (
 	"sync"
 )
 
-type LikeRepositoryImpl struct {
+type likeRepositoryImpl struct {
 	likes map[string]entities.Like
 	mu    sync.RWMutex
 }
 
 func NewLikeRepository() repositories.LikeRepository {
-	return &LikeRepositoryImpl{
+	return &likeRepositoryImpl{
 		likes: make(map[string]entities.Like),
 	}
 }
 
-func (r *LikeRepositoryImpl) Create(like entities.Like) error {
+func (r *likeRepositoryImpl) Create(like entities.Like) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -26,7 +26,7 @@ func (r *LikeRepositoryImpl) Create(like entities.Like) error {
 	return nil
 }
 
-func (r *LikeRepositoryImpl) Delete(userID, postID string) error {
+func (r *likeRepositoryImpl) Delete(userID, postID string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -39,7 +39,7 @@ func (r *LikeRepositoryImpl) Delete(userID, postID string) error {
 	return errors.New("like not found")
 }
 
-func (r *LikeRepositoryImpl) FindByPostID(postID string) ([]entities.Like, error) {
+func (r *likeRepositoryImpl) FindByPostID(postID string) ([]entities.Like, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -52,7 +52,7 @@ func (r *LikeRepositoryImpl) FindByPostID(postID string) ([]entities.Like, error
 	return likes, nil
 }
 
-func (r *LikeRepositoryImpl) FindByUserID(userID string) ([]entities.Like, error) {
+func (r *likeRepositoryImpl) FindByUserID(userID string) ([]entities.Like, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -65,7 +65,7 @@ func (r *LikeRepositoryImpl) FindByUserID(userID string) ([]entities.Like, error
 	return likes, nil
 }
 
-func (r *LikeRepositoryImpl) Exists(userID, postID string) bool {
+func (r *likeRepositoryImpl) Exists(userID, postID string) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

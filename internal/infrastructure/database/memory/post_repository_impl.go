@@ -7,18 +7,18 @@ import (
 	"sync"
 )
 
-type PostRepositoryImpl struct {
+type postRepositoryImpl struct {
 	posts map[string]entities.Post
 	mu    sync.RWMutex
 }
 
 func NewPostRepository() repositories.PostRepository {
-	return &PostRepositoryImpl{
+	return &postRepositoryImpl{
 		posts: make(map[string]entities.Post),
 	}
 }
 
-func (r *PostRepositoryImpl) Create(post entities.Post) error {
+func (r *postRepositoryImpl) Create(post entities.Post) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -26,7 +26,7 @@ func (r *PostRepositoryImpl) Create(post entities.Post) error {
 	return nil
 }
 
-func (r *PostRepositoryImpl) FindAll() ([]entities.Post, error) {
+func (r *postRepositoryImpl) FindAll() ([]entities.Post, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -37,7 +37,7 @@ func (r *PostRepositoryImpl) FindAll() ([]entities.Post, error) {
 	return posts, nil
 }
 
-func (r *PostRepositoryImpl) FindByID(id string) (entities.Post, error) {
+func (r *postRepositoryImpl) FindByID(id string) (entities.Post, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -48,7 +48,7 @@ func (r *PostRepositoryImpl) FindByID(id string) (entities.Post, error) {
 	return post, nil
 }
 
-func (r *PostRepositoryImpl) FindByUserID(userID string) ([]entities.Post, error) {
+func (r *postRepositoryImpl) FindByUserID(userID string) ([]entities.Post, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -61,7 +61,7 @@ func (r *PostRepositoryImpl) FindByUserID(userID string) ([]entities.Post, error
 	return posts, nil
 }
 
-func (r *PostRepositoryImpl) Update(post entities.Post) error {
+func (r *postRepositoryImpl) Update(post entities.Post) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -72,7 +72,7 @@ func (r *PostRepositoryImpl) Update(post entities.Post) error {
 	return nil
 }
 
-func (r *PostRepositoryImpl) Exists(id string) bool {
+func (r *postRepositoryImpl) Exists(id string) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

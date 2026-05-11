@@ -7,18 +7,18 @@ import (
 	"sync"
 )
 
-type UserRepositoryImpl struct {
+type userRepositoryImpl struct {
 	users map[string]entities.User
 	mu    sync.RWMutex
 }
 
 func NewUserRepository() repositories.UserRepository {
-	return &UserRepositoryImpl{
+	return &userRepositoryImpl{
 		users: make(map[string]entities.User),
 	}
 }
 
-func (r *UserRepositoryImpl) Create(user entities.User) error {
+func (r *userRepositoryImpl) Create(user entities.User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -26,7 +26,7 @@ func (r *UserRepositoryImpl) Create(user entities.User) error {
 	return nil
 }
 
-func (r *UserRepositoryImpl) FindAll() ([]entities.User, error) {
+func (r *userRepositoryImpl) FindAll() ([]entities.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -37,7 +37,7 @@ func (r *UserRepositoryImpl) FindAll() ([]entities.User, error) {
 	return users, nil
 }
 
-func (r *UserRepositoryImpl) FindByID(id string) (entities.User, error) {
+func (r *userRepositoryImpl) FindByID(id string) (entities.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -48,7 +48,7 @@ func (r *UserRepositoryImpl) FindByID(id string) (entities.User, error) {
 	return user, nil
 }
 
-func (r *UserRepositoryImpl) Exists(id string) bool {
+func (r *userRepositoryImpl) Exists(id string) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
