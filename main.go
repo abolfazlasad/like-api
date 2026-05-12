@@ -8,6 +8,8 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	"like-api/internal/application/dto/request"
+	"like-api/internal/application/dto/response"
 	likeusecase "like-api/internal/application/usecases/like"
 	postusecase "like-api/internal/application/usecases/post"
 	userusecase "like-api/internal/application/usecases/user"
@@ -41,25 +43,6 @@ type App struct {
 // Global app instance
 var app *App
 
-// LikePostRequest represents the request body for liking a post
-type LikePostRequest struct {
-	UserID string `json:"user_id" binding:"required" example:"user1"`
-	PostID string `json:"post_id" binding:"required" example:"post1"`
-}
-
-// UnlikePostRequest represents the request body for unliking a post
-type UnlikePostRequest struct {
-	UserID string `json:"user_id" binding:"required" example:"user1"`
-	PostID string `json:"post_id" binding:"required" example:"post1"`
-}
-
-// Response represents a standard API response
-type Response struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
-}
-
 // @Summary Get all users
 // @Description Get list of all predefined users
 // @Tags users
@@ -73,12 +56,15 @@ func getUsers(c *gin.Context) {
 	output := app.getUsersUseCase.Execute(input)
 
 	if output.Error != nil {
-		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to fetch users"})
+		c.JSON(
+			http.StatusInternalServerError,
+			response.Response{Success: false, Message: "Failed to fetch users"},
+		)
 		return
 	}
 
 	// Return response
-	c.JSON(http.StatusOK, Response{Success: true, Data: output.Users})
+	c.JSON(http.StatusOK, response.Response{Success: true, Data: output.Users})
 }
 
 // @Summary Get all posts
@@ -95,12 +81,12 @@ func getPosts(c *gin.Context) {
 
 	// Handle error
 	if output.Error != nil {
-		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to fetch posts"})
+		c.JSON(http.StatusInternalServerError, response.Response{Success: false, Message: "Failed to fetch posts"})
 		return
 	}
 
 	// Return response
-	c.JSON(http.StatusOK, Response{Success: true, Data: output.Posts})
+	c.JSON(http.StatusOK, response.Response{Success: true, Data: output.Posts})
 }
 
 // @Summary Get posts by user
@@ -123,18 +109,18 @@ func getUserPosts(c *gin.Context) {
 
 	// Handle user not found
 	if !output.UserExists {
-		c.JSON(http.StatusNotFound, Response{Success: false, Message: "User not found"})
+		c.JSON(http.StatusNotFound, response.Response{Success: false, Message: "User not found"})
 		return
 	}
 
 	// Handle error
 	if output.Error != nil {
-		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to fetch posts"})
+		c.JSON(http.StatusInternalServerError, response.Response{Success: false, Message: "Failed to fetch posts"})
 		return
 	}
 
 	// Return response
-	c.JSON(http.StatusOK, Response{Success: true, Data: output.Posts})
+	c.JSON(http.StatusOK, response.Response{Success: true, Data: output.Posts})
 }
 
 // @Summary Like a post
@@ -149,9 +135,9 @@ func getUserPosts(c *gin.Context) {
 // @Failure 409 {object} Response
 // @Router /likes [post]
 func likePost(c *gin.Context) {
-	var req LikePostRequest
+	var req request.LikePostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, Response{Success: false, Message: "Invalid request: " + err.Error()})
+		c.JSON(http.StatusBadRequest, response.Response{Success: false, Message: "Invalid request: " + err.Error()})
 		return
 	}
 
@@ -164,30 +150,30 @@ func likePost(c *gin.Context) {
 
 	// Handle user not found
 	if !output.UserExists {
-		c.JSON(http.StatusNotFound, Response{Success: false, Message: "User not found"})
+		c.JSON(http.StatusNotFound, response.Response{Success: false, Message: "User not found"})
 		return
 	}
 
 	// Handle post not found
 	if !output.PostExists {
-		c.JSON(http.StatusNotFound, Response{Success: false, Message: "Post not found"})
+		c.JSON(http.StatusNotFound, response.Response{Success: false, Message: "Post not found"})
 		return
 	}
 
 	// Handle already liked
 	if output.AlreadyLiked {
-		c.JSON(http.StatusConflict, Response{Success: false, Message: "Post already liked by this user"})
+		c.JSON(http.StatusConflict, response.Response{Success: false, Message: "Post already liked by this user"})
 		return
 	}
 
 	// Handle other errors
 	if output.Error != nil {
-		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to like post"})
+		c.JSON(http.StatusInternalServerError, response.Response{Success: false, Message: "Failed to like post"})
 		return
 	}
 
 	// Return success response
-	c.JSON(http.StatusOK, Response{
+	c.JSON(http.StatusOK, response.Response{
 		Success: true,
 		Message: "Post liked successfully",
 		Data:    output.Like,
@@ -205,9 +191,9 @@ func likePost(c *gin.Context) {
 // @Failure 404 {object} Response
 // @Router /likes [delete]
 func unlikePost(c *gin.Context) {
-	var req UnlikePostRequest
+	var req request.UnlikePostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, Response{Success: false, Message: "Invalid request: " + err.Error()})
+		c.JSON(http.StatusBadRequest, response.Response{Success: false, Message: "Invalid request: " + err.Error()})
 		return
 	}
 
@@ -220,18 +206,18 @@ func unlikePost(c *gin.Context) {
 
 	// Handle like not found
 	if !output.LikeExists {
-		c.JSON(http.StatusNotFound, Response{Success: false, Message: "Like not found"})
+		c.JSON(http.StatusNotFound, response.Response{Success: false, Message: "Like not found"})
 		return
 	}
 
 	// Handle error
 	if output.Error != nil {
-		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to unlike post"})
+		c.JSON(http.StatusInternalServerError, response.Response{Success: false, Message: "Failed to unlike post"})
 		return
 	}
 
 	// Return success response
-	c.JSON(http.StatusOK, Response{
+	c.JSON(http.StatusOK, response.Response{
 		Success: true,
 		Message: "Post unliked successfully",
 	})
@@ -257,18 +243,18 @@ func getPostLikes(c *gin.Context) {
 
 	// Handle post not found
 	if !output.PostExists {
-		c.JSON(http.StatusNotFound, Response{Success: false, Message: "Post not found"})
+		c.JSON(http.StatusNotFound, response.Response{Success: false, Message: "Post not found"})
 		return
 	}
 
 	// Handle error
 	if output.Error != nil {
-		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to fetch likes"})
+		c.JSON(http.StatusInternalServerError, response.Response{Success: false, Message: "Failed to fetch likes"})
 		return
 	}
 
 	// Return response
-	c.JSON(http.StatusOK, Response{Success: true, Data: output.Likes})
+	c.JSON(http.StatusOK, response.Response{Success: true, Data: output.Likes})
 }
 
 // @Summary Get user's liked posts
@@ -291,18 +277,18 @@ func getUserLikedPosts(c *gin.Context) {
 
 	// Handle user not found
 	if !output.UserExists {
-		c.JSON(http.StatusNotFound, Response{Success: false, Message: "User not found"})
+		c.JSON(http.StatusNotFound, response.Response{Success: false, Message: "User not found"})
 		return
 	}
 
 	// Handle error
 	if output.Error != nil {
-		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to fetch liked posts"})
+		c.JSON(http.StatusInternalServerError, response.Response{Success: false, Message: "Failed to fetch liked posts"})
 		return
 	}
 
 	// Return response
-	c.JSON(http.StatusOK, Response{Success: true, Data: output.Posts})
+	c.JSON(http.StatusOK, response.Response{Success: true, Data: output.Posts})
 }
 
 func main() {
