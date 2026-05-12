@@ -5,13 +5,12 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	likeusecase "like-api/internal/application/usecases/like"
 	postusecase "like-api/internal/application/usecases/post"
 	userusecase "like-api/internal/application/usecases/user"
-	"like-api/internal/domain/entities"
 	"like-api/internal/domain/repositories"
 	"like-api/internal/infrastructure/database/memory"
 
@@ -30,10 +29,13 @@ type App struct {
 	postRepo repositories.PostRepository
 	likeRepo repositories.LikeRepository
 
-	getUsersUseCase     userusecase.GetUsersUseCase
-	getPostsUseCase     postusecase.GetPostsUseCase
-	getUserPostsUseCase postusecase.GetUserPostsUseCase
-	getPostLikesUseCase postusecase.GetPostLikesUseCase
+	getUsersUseCase          userusecase.GetUsersUseCase
+	getPostsUseCase          postusecase.GetPostsUseCase
+	getUserPostsUseCase      postusecase.GetUserPostsUseCase
+	getPostLikesUseCase      postusecase.GetPostLikesUseCase
+	likePostUseCase          likeusecase.LikePostUseCase
+	unlikePostUseCase        likeusecase.UnlikePostUseCase
+	getUserLikedPostsUseCase likeusecase.GetUserLikedPostsUseCase
 }
 
 // Global app instance
@@ -153,50 +155,42 @@ func likePost(c *gin.Context) {
 		return
 	}
 
-	// Check if user exists
-	if !app.userRepo.Exists(req.UserID) {
+	// Execute use case
+	input := likeusecase.LikePostInput{
+		UserID: req.UserID,
+		PostID: req.PostID,
+	}
+	output := app.likePostUseCase.Execute(input)
+
+	// Handle user not found
+	if !output.UserExists {
 		c.JSON(http.StatusNotFound, Response{Success: false, Message: "User not found"})
 		return
 	}
 
-	// Check if post exists
-	post, err := app.postRepo.FindByID(req.PostID)
-	if err != nil {
+	// Handle post not found
+	if !output.PostExists {
 		c.JSON(http.StatusNotFound, Response{Success: false, Message: "Post not found"})
 		return
 	}
 
-	// Check if already liked
-	if app.likeRepo.Exists(req.UserID, req.PostID) {
+	// Handle already liked
+	if output.AlreadyLiked {
 		c.JSON(http.StatusConflict, Response{Success: false, Message: "Post already liked by this user"})
 		return
 	}
 
-	// Create like
-	likeID := uuid.New().String()
-	like := entities.Like{
-		ID:        likeID,
-		UserID:    req.UserID,
-		PostID:    req.PostID,
-		CreatedAt: "2024-01-20T10:00:00Z", // In real app, use time.Now()
-	}
-
-	if err := app.likeRepo.Create(like); err != nil {
-		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to create like"})
+	// Handle other errors
+	if output.Error != nil {
+		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to like post"})
 		return
 	}
 
-	// Update post like count
-	post.Likes++
-	if err := app.postRepo.Update(post); err != nil {
-		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to update post"})
-		return
-	}
-
+	// Return success response
 	c.JSON(http.StatusOK, Response{
 		Success: true,
 		Message: "Post liked successfully",
-		Data:    like,
+		Data:    output.Like,
 	})
 }
 
@@ -217,25 +211,26 @@ func unlikePost(c *gin.Context) {
 		return
 	}
 
-	// Check if the like exists
-	if !app.likeRepo.Exists(req.UserID, req.PostID) {
+	// Execute use case
+	input := likeusecase.UnlikePostInput{
+		UserID: req.UserID,
+		PostID: req.PostID,
+	}
+	output := app.unlikePostUseCase.Execute(input)
+
+	// Handle like not found
+	if !output.LikeExists {
 		c.JSON(http.StatusNotFound, Response{Success: false, Message: "Like not found"})
 		return
 	}
 
-	// Delete the like
-	if err := app.likeRepo.Delete(req.UserID, req.PostID); err != nil {
-		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to delete like"})
+	// Handle error
+	if output.Error != nil {
+		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to unlike post"})
 		return
 	}
 
-	// Update post like count
-	post, err := app.postRepo.FindByID(req.PostID)
-	if err == nil {
-		post.Likes--
-		app.postRepo.Update(post)
-	}
-
+	// Return success response
 	c.JSON(http.StatusOK, Response{
 		Success: true,
 		Message: "Post unliked successfully",
@@ -288,27 +283,26 @@ func getPostLikes(c *gin.Context) {
 func getUserLikedPosts(c *gin.Context) {
 	userID := c.Param("user_id")
 
-	// Check if user exists
-	if !app.userRepo.Exists(userID) {
+	// Execute use case
+	input := likeusecase.GetUserLikedPostsInput{
+		UserID: userID,
+	}
+	output := app.getUserLikedPostsUseCase.Execute(input)
+
+	// Handle user not found
+	if !output.UserExists {
 		c.JSON(http.StatusNotFound, Response{Success: false, Message: "User not found"})
 		return
 	}
 
-	// Get all likes by user
-	likes, err := app.likeRepo.FindByUserID(userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to fetch likes"})
+	// Handle error
+	if output.Error != nil {
+		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to fetch liked posts"})
 		return
 	}
 
-	// Get the actual posts
-	likedPosts := make([]entities.Post, 0)
-	for _, like := range likes {
-		if post, err := app.postRepo.FindByID(like.PostID); err == nil {
-			likedPosts = append(likedPosts, post)
-		}
-	}
-	c.JSON(http.StatusOK, Response{Success: true, Data: likedPosts})
+	// Return response
+	c.JSON(http.StatusOK, Response{Success: true, Data: output.Posts})
 }
 
 func main() {
@@ -321,13 +315,16 @@ func main() {
 	memory.InitData(userRepo, postRepo, likeRepo)
 
 	app = &App{
-		userRepo:            userRepo,
-		postRepo:            postRepo,
-		likeRepo:            likeRepo,
-		getUsersUseCase:     userusecase.NewGetUsersUseCase(userRepo),
-		getPostsUseCase:     postusecase.NewGetPostsUseCase(postRepo),
-		getUserPostsUseCase: postusecase.NewGetUserPostsUseCase(userRepo, postRepo),
-		getPostLikesUseCase: postusecase.NewGetPostLikesUseCase(postRepo, likeRepo),
+		userRepo:                 userRepo,
+		postRepo:                 postRepo,
+		likeRepo:                 likeRepo,
+		getUsersUseCase:          userusecase.NewGetUsersUseCase(userRepo),
+		getPostsUseCase:          postusecase.NewGetPostsUseCase(postRepo),
+		getUserPostsUseCase:      postusecase.NewGetUserPostsUseCase(userRepo, postRepo),
+		getPostLikesUseCase:      postusecase.NewGetPostLikesUseCase(postRepo, likeRepo),
+		likePostUseCase:          likeusecase.NewLikePostUseCase(userRepo, postRepo, likeRepo),
+		unlikePostUseCase:        likeusecase.NewUnlikePostUseCase(postRepo, likeRepo),
+		getUserLikedPostsUseCase: likeusecase.NewGetUserLikedPostsUseCase(userRepo, postRepo, likeRepo),
 	}
 
 	// Setup Gin router
