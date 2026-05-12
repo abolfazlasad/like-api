@@ -9,6 +9,8 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	postusecase "like-api/internal/application/usecases/post"
+	userusecase "like-api/internal/application/usecases/user"
 	"like-api/internal/domain/entities"
 	"like-api/internal/domain/repositories"
 	"like-api/internal/infrastructure/database/memory"
@@ -27,6 +29,11 @@ type App struct {
 	userRepo repositories.UserRepository
 	postRepo repositories.PostRepository
 	likeRepo repositories.LikeRepository
+
+	getUsersUseCase     userusecase.GetUsersUseCase
+	getPostsUseCase     postusecase.GetPostsUseCase
+	getUserPostsUseCase postusecase.GetUserPostsUseCase
+	getPostLikesUseCase postusecase.GetPostLikesUseCase
 }
 
 // Global app instance
@@ -59,12 +66,17 @@ type Response struct {
 // @Success 200 {object} Response
 // @Router /users [get]
 func getUsers(c *gin.Context) {
-	users, err := app.userRepo.FindAll()
-	if err != nil {
+	// Execute use case
+	input := userusecase.GetUsersInput{}
+	output := app.getUsersUseCase.Execute(input)
+
+	if output.Error != nil {
 		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to fetch users"})
 		return
 	}
-	c.JSON(http.StatusOK, Response{Success: true, Data: users})
+
+	// Return response
+	c.JSON(http.StatusOK, Response{Success: true, Data: output.Users})
 }
 
 // @Summary Get all posts
@@ -75,12 +87,18 @@ func getUsers(c *gin.Context) {
 // @Success 200 {object} Response
 // @Router /posts [get]
 func getPosts(c *gin.Context) {
-	posts, err := app.postRepo.FindAll()
-	if err != nil {
+	// Execute use case
+	input := postusecase.GetPostsInput{}
+	output := app.getPostsUseCase.Execute(input)
+
+	// Handle error
+	if output.Error != nil {
 		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to fetch posts"})
 		return
 	}
-	c.JSON(http.StatusOK, Response{Success: true, Data: posts})
+
+	// Return response
+	c.JSON(http.StatusOK, Response{Success: true, Data: output.Posts})
 }
 
 // @Summary Get posts by user
@@ -95,18 +113,26 @@ func getPosts(c *gin.Context) {
 func getUserPosts(c *gin.Context) {
 	userID := c.Param("user_id")
 
-	// Check if user exists
-	if !app.userRepo.Exists(userID) {
+	// Execute use case
+	input := postusecase.GetUserPostsInput{
+		UserID: userID,
+	}
+	output := app.getUserPostsUseCase.Execute(input)
+
+	// Handle user not found
+	if !output.UserExists {
 		c.JSON(http.StatusNotFound, Response{Success: false, Message: "User not found"})
 		return
 	}
 
-	posts, err := app.postRepo.FindByUserID(userID)
-	if err != nil {
+	// Handle error
+	if output.Error != nil {
 		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to fetch posts"})
 		return
 	}
-	c.JSON(http.StatusOK, Response{Success: true, Data: posts})
+
+	// Return response
+	c.JSON(http.StatusOK, Response{Success: true, Data: output.Posts})
 }
 
 // @Summary Like a post
@@ -228,18 +254,26 @@ func unlikePost(c *gin.Context) {
 func getPostLikes(c *gin.Context) {
 	postID := c.Param("post_id")
 
-	// Check if post exists
-	if !app.postRepo.Exists(postID) {
+	// Execute use case
+	input := postusecase.GetPostLikesInput{
+		PostID: postID,
+	}
+	output := app.getPostLikesUseCase.Execute(input)
+
+	// Handle post not found
+	if !output.PostExists {
 		c.JSON(http.StatusNotFound, Response{Success: false, Message: "Post not found"})
 		return
 	}
 
-	likes, err := app.likeRepo.FindByPostID(postID)
-	if err != nil {
+	// Handle error
+	if output.Error != nil {
 		c.JSON(http.StatusInternalServerError, Response{Success: false, Message: "Failed to fetch likes"})
 		return
 	}
-	c.JSON(http.StatusOK, Response{Success: true, Data: likes})
+
+	// Return response
+	c.JSON(http.StatusOK, Response{Success: true, Data: output.Likes})
 }
 
 // @Summary Get user's liked posts
@@ -287,9 +321,13 @@ func main() {
 	memory.InitData(userRepo, postRepo, likeRepo)
 
 	app = &App{
-		userRepo: userRepo,
-		postRepo: postRepo,
-		likeRepo: likeRepo,
+		userRepo:            userRepo,
+		postRepo:            postRepo,
+		likeRepo:            likeRepo,
+		getUsersUseCase:     userusecase.NewGetUsersUseCase(userRepo),
+		getPostsUseCase:     postusecase.NewGetPostsUseCase(postRepo),
+		getUserPostsUseCase: postusecase.NewGetUserPostsUseCase(userRepo, postRepo),
+		getPostLikesUseCase: postusecase.NewGetPostLikesUseCase(postRepo, likeRepo),
 	}
 
 	// Setup Gin router
