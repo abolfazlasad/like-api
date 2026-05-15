@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.LikePostRequest"
+                            "$ref": "#/definitions/request.LikePostRequest"
                         }
                     }
                 ],
@@ -43,25 +43,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -85,7 +85,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.UnlikePostRequest"
+                            "$ref": "#/definitions/request.UnlikePostRequest"
                         }
                     }
                 ],
@@ -93,19 +93,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -128,7 +128,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -160,13 +160,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -189,7 +189,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -221,13 +221,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -259,13 +259,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -273,7 +273,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "main.LikePostRequest": {
+        "request.LikePostRequest": {
             "type": "object",
             "required": [
                 "post_id",
@@ -290,7 +290,24 @@ const docTemplate = `{
                 }
             }
         },
-        "main.Response": {
+        "request.UnlikePostRequest": {
+            "type": "object",
+            "required": [
+                "post_id",
+                "user_id"
+            ],
+            "properties": {
+                "post_id": {
+                    "type": "string",
+                    "example": "post1"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "user1"
+                }
+            }
+        },
+        "response.Response": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -301,35 +318,18 @@ const docTemplate = `{
                     "type": "boolean"
                 }
             }
-        },
-        "main.UnlikePostRequest": {
-            "type": "object",
-            "required": [
-                "post_id",
-                "user_id"
-            ],
-            "properties": {
-                "post_id": {
-                    "type": "string",
-                    "example": "post1"
-                },
-                "user_id": {
-                    "type": "string",
-                    "example": "user1"
-                }
-            }
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
-	Host:             "localhost:8080",
-	BasePath:         "/api/v1",
+	Version:          "",
+	Host:             "",
+	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "Like API",
-	Description:      "API for liking posts with predefined users and posts",
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

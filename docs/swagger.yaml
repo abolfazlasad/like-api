@@ -1,6 +1,5 @@
-basePath: /api/v1
 definitions:
-  main.LikePostRequest:
+  request.LikePostRequest:
     properties:
       post_id:
         example: post1
@@ -12,7 +11,19 @@ definitions:
     - post_id
     - user_id
     type: object
-  main.Response:
+  request.UnlikePostRequest:
+    properties:
+      post_id:
+        example: post1
+        type: string
+      user_id:
+        example: user1
+        type: string
+    required:
+    - post_id
+    - user_id
+    type: object
+  response.Response:
     properties:
       data: {}
       message:
@@ -20,24 +31,8 @@ definitions:
       success:
         type: boolean
     type: object
-  main.UnlikePostRequest:
-    properties:
-      post_id:
-        example: post1
-        type: string
-      user_id:
-        example: user1
-        type: string
-    required:
-    - post_id
-    - user_id
-    type: object
-host: localhost:8080
 info:
   contact: {}
-  description: API for liking posts with predefined users and posts
-  title: Like API
-  version: "1.0"
 paths:
   /likes:
     delete:
@@ -50,22 +45,22 @@ paths:
         name: unlike
         required: true
         schema:
-          $ref: '#/definitions/main.UnlikePostRequest'
+          $ref: '#/definitions/request.UnlikePostRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
       summary: Unlike a post
       tags:
       - likes
@@ -79,26 +74,26 @@ paths:
         name: like
         required: true
         schema:
-          $ref: '#/definitions/main.LikePostRequest'
+          $ref: '#/definitions/request.LikePostRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
       summary: Like a post
       tags:
       - likes
@@ -113,7 +108,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
       summary: Get all posts
       tags:
       - posts
@@ -134,11 +129,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
       summary: Get likes for a post
       tags:
       - likes
@@ -153,7 +148,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
       summary: Get all users
       tags:
       - users
@@ -174,11 +169,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
       summary: Get user's liked posts
       tags:
       - likes
@@ -199,11 +194,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/main.Response'
+            $ref: '#/definitions/response.Response'
       summary: Get posts by user
       tags:
       - posts

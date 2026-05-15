@@ -1,13 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "API for liking posts with predefined users and posts",
-        "title": "Like API",
-        "contact": {},
-        "version": "1.0"
+        "contact": {}
     },
-    "host": "localhost:8080",
-    "basePath": "/api/v1",
     "paths": {
         "/likes": {
             "post": {
@@ -29,7 +24,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.LikePostRequest"
+                            "$ref": "#/definitions/request.LikePostRequest"
                         }
                     }
                 ],
@@ -37,25 +32,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -79,7 +74,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.UnlikePostRequest"
+                            "$ref": "#/definitions/request.UnlikePostRequest"
                         }
                     }
                 ],
@@ -87,19 +82,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -122,7 +117,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -154,13 +149,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -183,7 +178,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -215,13 +210,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -253,13 +248,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -267,7 +262,7 @@
         }
     },
     "definitions": {
-        "main.LikePostRequest": {
+        "request.LikePostRequest": {
             "type": "object",
             "required": [
                 "post_id",
@@ -284,7 +279,24 @@
                 }
             }
         },
-        "main.Response": {
+        "request.UnlikePostRequest": {
+            "type": "object",
+            "required": [
+                "post_id",
+                "user_id"
+            ],
+            "properties": {
+                "post_id": {
+                    "type": "string",
+                    "example": "post1"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "user1"
+                }
+            }
+        },
+        "response.Response": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -293,23 +305,6 @@
                 },
                 "success": {
                     "type": "boolean"
-                }
-            }
-        },
-        "main.UnlikePostRequest": {
-            "type": "object",
-            "required": [
-                "post_id",
-                "user_id"
-            ],
-            "properties": {
-                "post_id": {
-                    "type": "string",
-                    "example": "post1"
-                },
-                "user_id": {
-                    "type": "string",
-                    "example": "user1"
                 }
             }
         }
