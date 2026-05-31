@@ -48,10 +48,34 @@ func (r *userRepositoryImpl) FindByID(id string) (entities.User, error) {
 	return user, nil
 }
 
+func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, user := range r.users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+	return entities.User{}, errors.New("user not found")
+}
+
 func (r *userRepositoryImpl) Exists(id string) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	_, exists := r.users[id]
 	return exists
+}
+
+func (r *userRepositoryImpl) ExistsByEmail(email string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, user := range r.users {
+		if user.Email == email {
+			return true
+		}
+	}
+	return false
 }

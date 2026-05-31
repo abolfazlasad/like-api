@@ -37,7 +37,7 @@ func NewLikeHandler(
 // @Failure 400 {object} response.Response
 // @Failure 404 {object} response.Response
 // @Failure 409 {object} response.Response
-// @Router /likes [post]
+// @Router /api/v1/likes [post]
 func (h *LikeHandler) LikePost(c *gin.Context) {
 	var req request.LikePostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -87,7 +87,7 @@ func (h *LikeHandler) LikePost(c *gin.Context) {
 // @Success 200 {object} response.Response
 // @Failure 400 {object} response.Response
 // @Failure 404 {object} response.Response
-// @Router /likes [delete]
+// @Router /api/v1/likes [delete]
 func (h *LikeHandler) UnlikePost(c *gin.Context) {
 	var req request.UnlikePostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -125,7 +125,7 @@ func (h *LikeHandler) UnlikePost(c *gin.Context) {
 // @Param user_id path string true "User ID"
 // @Success 200 {object} response.Response
 // @Failure 404 {object} response.Response
-// @Router /users/{user_id}/liked-posts [get]
+// @Router /api/v1/users/{user_id}/liked-posts [get]
 func (h *LikeHandler) GetUserLikedPosts(c *gin.Context) {
 	userID := c.Param("user_id")
 

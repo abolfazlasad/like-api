@@ -1,11 +1,15 @@
-FROM golang:1.25-alpine AS builder
+ARG GO_VERSION
+ARG ALPINE_VERSION
+
+FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
+
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN go build -o server ./main.go
 
-FROM alpine:3.19
+FROM alpine:${ALPINE_VERSION}
 WORKDIR /app
 COPY --from=builder /app/server .
 EXPOSE 8080

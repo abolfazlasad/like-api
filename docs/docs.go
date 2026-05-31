@@ -15,7 +15,97 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/likes": {
+        "/api/v1/auth/login": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login",
+                "parameters": [
+                    {
+                        "description": "Login request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.AuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/register": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "Register request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.AuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/likes": {
             "post": {
                 "description": "Like a specific post as a user",
                 "consumes": [
@@ -111,7 +201,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/posts": {
+        "/api/v1/posts": {
             "get": {
                 "description": "Get list of all posts",
                 "consumes": [
@@ -134,7 +224,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/posts/{post_id}/likes": {
+        "/api/v1/posts/{post_id}/likes": {
             "get": {
                 "description": "Get all likes for a specific post",
                 "consumes": [
@@ -172,7 +262,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users": {
+        "/api/v1/users": {
             "get": {
                 "description": "Get list of all predefined users",
                 "consumes": [
@@ -195,7 +285,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{user_id}/liked-posts": {
+        "/api/v1/users/{user_id}/liked-posts": {
             "get": {
                 "description": "Get all posts liked by a specific user",
                 "consumes": [
@@ -233,7 +323,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{user_id}/posts": {
+        "/api/v1/users/{user_id}/posts": {
             "get": {
                 "description": "Get all posts from a specific user",
                 "consumes": [
@@ -290,6 +380,47 @@ const docTemplate = `{
                 }
             }
         },
+        "request.LoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3
+                }
+            }
+        },
         "request.UnlikePostRequest": {
             "type": "object",
             "required": [
@@ -307,6 +438,17 @@ const docTemplate = `{
                 }
             }
         },
+        "response.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/response.UserDTO"
+                }
+            }
+        },
         "response.Response": {
             "type": "object",
             "properties": {
@@ -316,6 +458,23 @@ const docTemplate = `{
                 },
                 "success": {
                     "type": "boolean"
+                }
+            }
+        },
+        "response.UserDTO": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         }

@@ -11,6 +11,35 @@ definitions:
     - post_id
     - user_id
     type: object
+  request.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  request.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - name
+    - password
+    - username
+    type: object
   request.UnlikePostRequest:
     properties:
       post_id:
@@ -23,6 +52,13 @@ definitions:
     - post_id
     - user_id
     type: object
+  response.AuthResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/response.UserDTO'
+    type: object
   response.Response:
     properties:
       data: {}
@@ -31,10 +67,79 @@ definitions:
       success:
         type: boolean
     type: object
+  response.UserDTO:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      username:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
-  /likes:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Login request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Login
+      tags:
+      - auth
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Register request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Register a new user
+      tags:
+      - auth
+  /api/v1/likes:
     delete:
       consumes:
       - application/json
@@ -97,7 +202,7 @@ paths:
       summary: Like a post
       tags:
       - likes
-  /posts:
+  /api/v1/posts:
     get:
       consumes:
       - application/json
@@ -112,7 +217,7 @@ paths:
       summary: Get all posts
       tags:
       - posts
-  /posts/{post_id}/likes:
+  /api/v1/posts/{post_id}/likes:
     get:
       consumes:
       - application/json
@@ -137,7 +242,7 @@ paths:
       summary: Get likes for a post
       tags:
       - likes
-  /users:
+  /api/v1/users:
     get:
       consumes:
       - application/json
@@ -152,7 +257,7 @@ paths:
       summary: Get all users
       tags:
       - users
-  /users/{user_id}/liked-posts:
+  /api/v1/users/{user_id}/liked-posts:
     get:
       consumes:
       - application/json
@@ -177,7 +282,7 @@ paths:
       summary: Get user's liked posts
       tags:
       - likes
-  /users/{user_id}/posts:
+  /api/v1/users/{user_id}/posts:
     get:
       consumes:
       - application/json

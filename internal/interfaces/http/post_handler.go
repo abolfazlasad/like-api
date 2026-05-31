@@ -32,7 +32,7 @@ func NewPostHandler(
 // @Accept json
 // @Produce json
 // @Success 200 {object} response.Response
-// @Router /posts [get]
+// @Router /api/v1/posts [get]
 func (h *PostHandler) GetPosts(c *gin.Context) {
 	// Execute use case
 	input := postusecase.GetPostsInput{}
@@ -56,7 +56,7 @@ func (h *PostHandler) GetPosts(c *gin.Context) {
 // @Param user_id path string true "User ID"
 // @Success 200 {object} response.Response
 // @Failure 404 {object} response.Response
-// @Router /users/{user_id}/posts [get]
+// @Router /api/v1/users/{user_id}/posts [get]
 func (h *PostHandler) GetUserPosts(c *gin.Context) {
 	userID := c.Param("user_id")
 
@@ -86,7 +86,7 @@ func (h *PostHandler) GetUserPosts(c *gin.Context) {
 // @Param post_id path string true "Post ID"
 // @Success 200 {object} response.Response
 // @Failure 404 {object} response.Response
-// @Router /posts/{post_id}/likes [get]
+// @Router /api/v1/posts/{post_id}/likes [get]
 func (h *PostHandler) GetPostLikes(c *gin.Context) {
 	postID := c.Param("post_id")
 
