@@ -6,11 +6,14 @@ import (
 	"os"
 )
 
-// InitRepositories بر اساس env متغیرها، postgres یا memory انتخاب می‌کنه
+// InitRepositories reads env vars, connects to PostgreSQL, runs migrations,
+// and returns all repository implementations.
 func InitRepositories() (
 	repositories.UserRepository,
 	repositories.PostRepository,
 	repositories.LikeRepository,
+	repositories.VideoRepository,
+	repositories.ProductRepository,
 ) {
 	dbHost := os.Getenv("DB_HOST")
 
@@ -40,7 +43,9 @@ func InitRepositories() (
 
 	return newUserRepository(db),
 		newPostRepository(db),
-		newLikeRepository(db)
+		newLikeRepository(db),
+		newVideoRepository(db),
+		newProductRepository(db)
 }
 
 func getEnv(key, fallback string) string {

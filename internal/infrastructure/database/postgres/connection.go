@@ -112,5 +112,7 @@ func (d *DB) Migrate() error {
 		&models.UserModel{},
 		&models.PostModel{},
 		&models.LikeModel{},
+		&models.VideoModel{},
+		&models.ProductModel{},
 	)
 }

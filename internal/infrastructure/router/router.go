@@ -11,11 +11,13 @@ import (
 )
 
 type Router struct {
-	authHandler *httpHandler.AuthHandler
-	userHandler *httpHandler.UserHandler
-	postHandler *httpHandler.PostHandler
-	likeHandler *httpHandler.LikeHandler
-	jwtSecret   string
+	authHandler    *httpHandler.AuthHandler
+	userHandler    *httpHandler.UserHandler
+	postHandler    *httpHandler.PostHandler
+	likeHandler    *httpHandler.LikeHandler
+	videoHandler   *httpHandler.VideoHandler
+	productHandler *httpHandler.ProductHandler
+	jwtSecret      string
 }
 
 func NewRouter(
@@ -23,14 +25,18 @@ func NewRouter(
 	userHandler *httpHandler.UserHandler,
 	postHandler *httpHandler.PostHandler,
 	likeHandler *httpHandler.LikeHandler,
+	videoHandler *httpHandler.VideoHandler,
+	productHandler *httpHandler.ProductHandler,
 	jwtSecret string,
 ) *Router {
 	return &Router{
-		authHandler: authHandler,
-		userHandler: userHandler,
-		postHandler: postHandler,
-		likeHandler: likeHandler,
-		jwtSecret:   jwtSecret,
+		authHandler:    authHandler,
+		userHandler:    userHandler,
+		postHandler:    postHandler,
+		likeHandler:    likeHandler,
+		videoHandler:   videoHandler,
+		productHandler: productHandler,
+		jwtSecret:      jwtSecret,
 	}
 }
 
@@ -42,22 +48,46 @@ func (r *Router) Setup() *gin.Engine {
 
 	api := router.Group("/api/v1")
 
-	// public
+	// ── public ──────────────────────────────────────────────────────────────
+
 	api.POST("/auth/register", r.authHandler.Register)
 	api.POST("/auth/login", r.authHandler.Login)
 
+	// users
 	api.GET("/users", r.userHandler.GetUsers)
 	api.GET("/users/:user_id/posts", r.postHandler.GetUserPosts)
 	api.GET("/users/:user_id/liked-posts", r.likeHandler.GetUserLikedPosts)
+
+	// posts (legacy)
 	api.GET("/posts", r.postHandler.GetPosts)
 	api.GET("/posts/:post_id/likes", r.postHandler.GetPostLikes)
 
-	// protected
-	likes := api.Group("/likes")
-	likes.Use(middleware.AuthMiddleware(r.jwtSecret))
+	// videos — read
+	api.GET("/feed", r.videoHandler.GetFeed)
+	api.GET("/videos/:id", r.videoHandler.GetVideo)
+	api.GET("/videos/:id/stats", r.videoHandler.GetVideoStats)
+	api.GET("/videos/:id/product", r.productHandler.GetProductByVideo)
+
+	// products — read
+	api.GET("/products/:id", r.productHandler.GetProduct)
+
+	// ── protected (JWT required) ─────────────────────────────────────────────
+
+	auth := api.Group("")
+	auth.Use(middleware.AuthMiddleware(r.jwtSecret))
 	{
-		likes.POST("", r.likeHandler.LikePost)
-		likes.DELETE("", r.likeHandler.UnlikePost)
+		// legacy like endpoints
+		auth.POST("/likes", r.likeHandler.LikePost)
+		auth.DELETE("/likes", r.likeHandler.UnlikePost)
+
+		// videos — write
+		auth.POST("/videos", r.videoHandler.CreateVideo)
+		auth.POST("/videos/:id/like", r.videoHandler.LikeVideo)
+		auth.POST("/videos/:id/unlike", r.videoHandler.UnlikeVideo)
+		auth.POST("/videos/:id/view", r.videoHandler.TrackView)
+
+		// products — write
+		auth.POST("/products", r.productHandler.CreateProduct)
 	}
 
 	return router
