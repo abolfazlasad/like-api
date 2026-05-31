@@ -20,7 +20,7 @@ go-tidy:
 		$(GO_IMAGE) \
 		go mod tidy
 
-# for e.g. make get PKG=github.com/golang-jwt/jwt/v5
+# for e.g. make go-get PKG=github.com/golang-jwt/jwt/v5
 go-get:
 	docker run --rm \
 		-v $(PWD):/app:ro \

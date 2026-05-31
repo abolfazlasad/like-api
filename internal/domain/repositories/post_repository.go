@@ -9,4 +9,10 @@ type PostRepository interface {
 	FindByUserID(userID string) ([]entities.Post, error)
 	Update(post entities.Post) error
 	Exists(id string) bool
+
+	// IncrementLikes and DecrementLikes are atomic operations and are safe
+	// from race conditions. They should be used instead of read-modify-write
+	// patterns like fetching a post and doing likes++.
+	IncrementLikes(postID string) error
+	DecrementLikes(postID string) error
 }

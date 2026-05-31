@@ -55,11 +55,9 @@ func (uc *unlikePostUseCaseImpl) Execute(input UnlikePostInput) UnlikePostOutput
 		}
 	}
 
-	// Update post like count
-	post, err := uc.postRepo.FindByID(input.PostID)
-	if err == nil {
-		post.Likes--
-		uc.postRepo.Update(post)
+	// atomic decrement — also prevents the value from going below zero
+	if err := uc.postRepo.DecrementLikes(input.PostID); err != nil {
+		return UnlikePostOutput{LikeExists: true, Error: err}
 	}
 
 	return UnlikePostOutput{

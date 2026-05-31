@@ -3,6 +3,7 @@ package likeusecase
 import (
 	"like-api/internal/domain/entities"
 	"like-api/internal/domain/repositories"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -57,8 +58,7 @@ func (uc *likePostUseCaseImpl) Execute(input LikePostInput) LikePostOutput {
 	}
 
 	// Check if post exists
-	post, err := uc.postRepo.FindByID(input.PostID)
-	if err != nil {
+	if !uc.postRepo.Exists(input.PostID) {
 		return LikePostOutput{
 			UserExists: true,
 			PostExists: false,
@@ -75,12 +75,11 @@ func (uc *likePostUseCaseImpl) Execute(input LikePostInput) LikePostOutput {
 	}
 
 	// Create like
-	likeID := uuid.New().String()
 	like := entities.Like{
-		ID:        likeID,
+		ID:        uuid.New().String(),
 		UserID:    input.UserID,
 		PostID:    input.PostID,
-		CreatedAt: "2024-01-20T10:00:00Z", // In real app, use time.Now()
+		CreatedAt: time.Now().Format(time.RFC3339),
 	}
 
 	if err := uc.likeRepo.Create(like); err != nil {
@@ -92,9 +91,8 @@ func (uc *likePostUseCaseImpl) Execute(input LikePostInput) LikePostOutput {
 		}
 	}
 
-	// Update post like count
-	post.Likes++
-	if err := uc.postRepo.Update(post); err != nil {
+	// atomic increment — no race condition
+	if err := uc.postRepo.IncrementLikes(input.PostID); err != nil {
 		return LikePostOutput{
 			UserExists:   true,
 			PostExists:   true,

@@ -12,7 +12,7 @@ type postRepositoryImpl struct {
 	mu    sync.RWMutex
 }
 
-func NewPostRepository() repositories.PostRepository {
+func newPostRepository() repositories.PostRepository {
 	return &postRepositoryImpl{
 		posts: make(map[string]entities.Post),
 	}
@@ -69,6 +69,40 @@ func (r *postRepositoryImpl) Update(post entities.Post) error {
 		return errors.New("post not found")
 	}
 	r.posts[post.ID] = post
+	return nil
+}
+
+// IncrementLikes is made atomic using a mutex.
+// In an in-memory implementation, this is sufficient for concurrency safety.
+func (r *postRepositoryImpl) IncrementLikes(postID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	post, exists := r.posts[postID]
+	if !exists {
+		return errors.New("post not found")
+	}
+
+	post.Likes++
+	r.posts[postID] = post
+	return nil
+}
+
+// DecrementLikes prevents the likes count from going below zero.
+func (r *postRepositoryImpl) DecrementLikes(postID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	post, exists := r.posts[postID]
+	if !exists {
+		return errors.New("post not found")
+	}
+
+	if post.Likes > 0 {
+		post.Likes--
+	}
+
+	r.posts[postID] = post
 	return nil
 }
 

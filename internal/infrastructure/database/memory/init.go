@@ -9,7 +9,25 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func InitData(
+func InitRepositories(
+	initDefaultData bool,
+) (
+	repositories.UserRepository,
+	repositories.PostRepository,
+	repositories.LikeRepository,
+) {
+	userRepo := newUserRepository()
+	postRepo := newPostRepository()
+	likeRepo := newLikeRepository()
+
+	if initDefaultData {
+		initData(userRepo, postRepo, likeRepo)
+	}
+
+	return userRepo, postRepo, likeRepo
+}
+
+func initData(
 	userRepo repositories.UserRepository,
 	postRepo repositories.PostRepository,
 	likeRepo repositories.LikeRepository,

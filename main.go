@@ -7,7 +7,7 @@ import (
 	likeusecase "like-api/internal/application/usecases/like"
 	postusecase "like-api/internal/application/usecases/post"
 	userusecase "like-api/internal/application/usecases/user"
-	"like-api/internal/infrastructure/database/memory"
+	"like-api/internal/infrastructure/database/postgres"
 	"like-api/internal/infrastructure/router"
 	httpHandler "like-api/internal/interfaces/http"
 
@@ -20,19 +20,12 @@ func main() {
 		jwtSecret = "dev-secret-change-in-production"
 	}
 
-	// repositories
-	userRepo := memory.NewUserRepository()
-	postRepo := memory.NewPostRepository()
-	likeRepo := memory.NewLikeRepository()
+	// userRepo, postRepo, likeRepo := memory.InitRepos(true)
+	userRepo, postRepo, likeRepo := postgres.InitRepositories()
 
-	// Initialize with hardcoded data
-	memory.InitData(userRepo, postRepo, likeRepo)
-
-	// auth use cases
+	// use cases
 	registerUC := authusecase.NewRegisterUseCase(userRepo, jwtSecret)
 	loginUC := authusecase.NewLoginUseCase(userRepo, jwtSecret)
-
-	// existing use cases
 	getUsersUseCase := userusecase.NewGetUsersUseCase(userRepo)
 	getPostsUseCase := postusecase.NewGetPostsUseCase(postRepo)
 	getUserPostsUseCase := postusecase.NewGetUserPostsUseCase(userRepo, postRepo)

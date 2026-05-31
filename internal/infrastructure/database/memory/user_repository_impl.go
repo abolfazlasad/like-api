@@ -12,7 +12,7 @@ type userRepositoryImpl struct {
 	mu    sync.RWMutex
 }
 
-func NewUserRepository() repositories.UserRepository {
+func newUserRepository() repositories.UserRepository {
 	return &userRepositoryImpl{
 		users: make(map[string]entities.User),
 	}
