@@ -1,4 +1,37 @@
 definitions:
+  request.CreateProductRequest:
+    properties:
+      image_url:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 1
+        type: string
+      price:
+        type: number
+      video_id:
+        type: string
+    required:
+    - image_url
+    - name
+    - price
+    - video_id
+    type: object
+  request.CreateVideoRequest:
+    properties:
+      description:
+        maxLength: 2000
+        type: string
+      title:
+        maxLength: 255
+        minLength: 1
+        type: string
+      video_url:
+        type: string
+    required:
+    - title
+    - video_url
+    type: object
   request.LikePostRequest:
     properties:
       post_id:
@@ -139,6 +172,27 @@ paths:
       summary: Register a new user
       tags:
       - auth
+  /api/v1/feed:
+    get:
+      parameters:
+      - description: Pagination cursor (RFC3339 timestamp)
+        in: query
+        name: cursor
+        type: string
+      - description: Page size (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get paginated video feed
+      tags:
+      - videos
   /api/v1/likes:
     delete:
       consumes:
@@ -242,6 +296,63 @@ paths:
       summary: Get likes for a post
       tags:
       - likes
+  /api/v1/products:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Product data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create a product linked to a video
+      tags:
+      - products
+  /api/v1/products/{id}:
+    get:
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get a product by ID
+      tags:
+      - products
   /api/v1/users:
     get:
       consumes:
@@ -307,4 +418,167 @@ paths:
       summary: Get posts by user
       tags:
       - posts
+  /api/v1/videos:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Video data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateVideoRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Upload a video
+      tags:
+      - videos
+  /api/v1/videos/{id}:
+    get:
+      parameters:
+      - description: Video ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get a video by ID
+      tags:
+      - videos
+  /api/v1/videos/{id}/like:
+    post:
+      parameters:
+      - description: Video ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Like a video
+      tags:
+      - videos
+  /api/v1/videos/{id}/product:
+    get:
+      parameters:
+      - description: Video ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get the product attached to a video
+      tags:
+      - products
+  /api/v1/videos/{id}/stats:
+    get:
+      parameters:
+      - description: Video ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get video stats (bonus)
+      tags:
+      - videos
+  /api/v1/videos/{id}/unlike:
+    post:
+      parameters:
+      - description: Video ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Unlike a video
+      tags:
+      - videos
+  /api/v1/videos/{id}/view:
+    post:
+      parameters:
+      - description: Video ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Track a video view
+      tags:
+      - videos
 swagger: "2.0"
