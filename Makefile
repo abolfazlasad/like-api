@@ -6,10 +6,12 @@ endif
 BINARY := server
 GO_IMAGE := golang:$(GO_VERSION)-alpine$(ALPINE_VERSION)
 
-.PHONY: all go-tidy go-get swag-init docker-build docker-down docker-up
+.PHONY: all test go-tidy go-get swag-init docker-build docker-down docker-up
 
 all: docker-down swag-init docker-build docker-up
 
+test:
+	richgo test -v -cover -race -short ./...
 
 go-tidy:
 	docker run --rm \
