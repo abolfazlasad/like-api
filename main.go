@@ -55,7 +55,8 @@ func main() {
 		jwtSecret = "dev-secret-change-in-production"
 	}
 
-	// userRepo, likeRepo, videoRepo, productRepo := memory.InitRepositories(true)
+	// userRepo, likeRepo, videoRepo, productRepo := memory.InitRepositories()
+	// memory.InitData(userRepo, likeRepo, videoRepo, productRepo)
 	userRepo, likeRepo, videoRepo, productRepo := postgres.InitRepositories()
 
 	// ── auth ──────────────────────────────────────────────────────────────────

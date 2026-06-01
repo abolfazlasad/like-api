@@ -12,7 +12,7 @@ type productRepositoryImpl struct {
 	mu       sync.RWMutex
 }
 
-func newProductRepository() repositories.ProductRepository {
+func NewProductRepository() repositories.ProductRepository {
 	return &productRepositoryImpl{
 		products: make(map[string]entities.Product),
 	}

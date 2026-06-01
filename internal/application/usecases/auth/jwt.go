@@ -10,13 +10,13 @@ import (
 
 // Claims holds the JWT payload including the user's role.
 type Claims struct {
-	UserID   string       `json:"user_id"`
-	Username string       `json:"username"`
+	UserID   string        `json:"user_id"`
+	Username string        `json:"username"`
 	Role     entities.Role `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func generateToken(user entities.User, secret string) (string, error) {
+func GenerateToken(user entities.User, secret string) (string, error) {
 	role := user.Role
 	if role == "" {
 		role = entities.RoleUser

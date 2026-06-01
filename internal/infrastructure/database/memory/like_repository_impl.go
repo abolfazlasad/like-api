@@ -12,7 +12,7 @@ type likeRepositoryImpl struct {
 	mu    sync.RWMutex
 }
 
-func newLikeRepository() repositories.LikeRepository {
+func NewLikeRepository() repositories.LikeRepository {
 	return &likeRepositoryImpl{
 		likes: make(map[string]entities.Like),
 	}

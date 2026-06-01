@@ -46,7 +46,7 @@ func (uc *RegisterUseCase) Execute(req request.RegisterRequest) (*response.AuthR
 		return nil, err
 	}
 
-	token, err := generateToken(user, uc.jwtSecret)
+	token, err := GenerateToken(user, uc.jwtSecret)
 	if err != nil {
 		return nil, err
 	}

@@ -14,7 +14,7 @@ type videoRepositoryImpl struct {
 	mu     sync.RWMutex
 }
 
-func newVideoRepository() repositories.VideoRepository {
+func NewVideoRepository() repositories.VideoRepository {
 	return &videoRepositoryImpl{
 		videos: make(map[string]entities.Video),
 	}

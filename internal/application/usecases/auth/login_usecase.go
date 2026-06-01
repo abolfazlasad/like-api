@@ -29,7 +29,7 @@ func (uc *LoginUseCase) Execute(req request.LoginRequest) (*response.AuthRespons
 		return nil, errors.New("invalid credentials")
 	}
 
-	token, err := generateToken(user, uc.jwtSecret)
+	token, err := GenerateToken(user, uc.jwtSecret)
 	if err != nil {
 		return nil, err
 	}
