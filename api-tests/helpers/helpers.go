@@ -11,7 +11,12 @@ import (
 	"time"
 )
 
-var BaseURL = os.Getenv("BASE_URL")
+var BaseURL = func() string {
+	if v := os.Getenv("BASE_URL"); v != "" {
+		return v
+	}
+	return "http://localhost:8080"
+}()
 
 // ─── Generic response wrapper ───────────────────────────────────────────────
 

@@ -36,28 +36,46 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	authusecase "like-api/internal/application/usecases/auth"
 	productusecase "like-api/internal/application/usecases/product"
 	userusecase "like-api/internal/application/usecases/user"
 	videousecase "like-api/internal/application/usecases/video"
+	"like-api/internal/domain/repositories"
+	"like-api/internal/infrastructure/database/memory"
 	"like-api/internal/infrastructure/database/postgres"
 	"like-api/internal/infrastructure/router"
 	httpHandler "like-api/internal/interfaces/http"
 
 	_ "like-api/docs"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system environment variables")
+	}
+
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
 		jwtSecret = "dev-secret-change-in-production"
 	}
 
-	// userRepo, likeRepo, videoRepo, productRepo := memory.InitRepositories()
-	// memory.InitData(userRepo, likeRepo, videoRepo, productRepo)
-	userRepo, likeRepo, videoRepo, productRepo := postgres.InitRepositories()
+	var (
+		userRepo    repositories.UserRepository
+		likeRepo    repositories.LikeRepository
+		videoRepo   repositories.VideoRepository
+		productRepo repositories.ProductRepository
+	)
+
+	if os.Getenv("DB_TYPE") == "memory" {
+		userRepo, likeRepo, videoRepo, productRepo = memory.InitRepositories()
+	} else {
+		userRepo, likeRepo, videoRepo, productRepo = postgres.InitRepositories()
+	}
 
 	// ── auth ──────────────────────────────────────────────────────────────────
 	registerUC := authusecase.NewRegisterUseCase(userRepo, jwtSecret)

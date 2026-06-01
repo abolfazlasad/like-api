@@ -14,6 +14,7 @@ services:
       - DB_USER=appuser
       - DB_PASSWORD=secret
       - DB_NAME=video_commerce
+      - JWT_SECRET=your-super-secret-jwt-key
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
       - ADMIN_NAME=${ADMIN_NAME:-Admin}
