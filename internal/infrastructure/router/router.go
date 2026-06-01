@@ -13,8 +13,6 @@ import (
 type Router struct {
 	authHandler    *httpHandler.AuthHandler
 	userHandler    *httpHandler.UserHandler
-	postHandler    *httpHandler.PostHandler
-	likeHandler    *httpHandler.LikeHandler
 	videoHandler   *httpHandler.VideoHandler
 	productHandler *httpHandler.ProductHandler
 	jwtSecret      string
@@ -23,8 +21,6 @@ type Router struct {
 func NewRouter(
 	authHandler *httpHandler.AuthHandler,
 	userHandler *httpHandler.UserHandler,
-	postHandler *httpHandler.PostHandler,
-	likeHandler *httpHandler.LikeHandler,
 	videoHandler *httpHandler.VideoHandler,
 	productHandler *httpHandler.ProductHandler,
 	jwtSecret string,
@@ -32,8 +28,6 @@ func NewRouter(
 	return &Router{
 		authHandler:    authHandler,
 		userHandler:    userHandler,
-		postHandler:    postHandler,
-		likeHandler:    likeHandler,
 		videoHandler:   videoHandler,
 		productHandler: productHandler,
 		jwtSecret:      jwtSecret,
@@ -55,12 +49,6 @@ func (r *Router) Setup() *gin.Engine {
 
 	// users
 	api.GET("/users", r.userHandler.GetUsers)
-	api.GET("/users/:user_id/posts", r.postHandler.GetUserPosts)
-	api.GET("/users/:user_id/liked-posts", r.likeHandler.GetUserLikedPosts)
-
-	// posts (legacy)
-	api.GET("/posts", r.postHandler.GetPosts)
-	api.GET("/posts/:post_id/likes", r.postHandler.GetPostLikes)
 
 	// videos — read
 	api.GET("/feed", r.videoHandler.GetFeed)
@@ -76,10 +64,6 @@ func (r *Router) Setup() *gin.Engine {
 	auth := api.Group("")
 	auth.Use(middleware.AuthMiddleware(r.jwtSecret))
 	{
-		// legacy like endpoints
-		auth.POST("/likes", r.likeHandler.LikePost)
-		auth.DELETE("/likes", r.likeHandler.UnlikePost)
-
 		// videos — write
 		auth.POST("/videos", r.videoHandler.CreateVideo)
 		auth.POST("/videos/:id/like", r.videoHandler.LikeVideo)

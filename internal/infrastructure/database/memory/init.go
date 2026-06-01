@@ -13,73 +13,87 @@ func InitRepositories(
 	initDefaultData bool,
 ) (
 	repositories.UserRepository,
-	repositories.PostRepository,
 	repositories.LikeRepository,
+	repositories.VideoRepository,
+	repositories.ProductRepository,
 ) {
 	userRepo := newUserRepository()
-	postRepo := newPostRepository()
 	likeRepo := newLikeRepository()
+	videoRepo := newVideoRepository()
+	productRepo := newProductRepository()
 
 	if initDefaultData {
-		initData(userRepo, postRepo, likeRepo)
+		initData(userRepo, likeRepo, videoRepo, productRepo)
 	}
 
-	return userRepo, postRepo, likeRepo
+	return userRepo, likeRepo, videoRepo, productRepo
 }
 
 func initData(
 	userRepo repositories.UserRepository,
-	postRepo repositories.PostRepository,
 	likeRepo repositories.LikeRepository,
+	videoRepo repositories.VideoRepository,
+	productRepo repositories.ProductRepository,
 ) {
-	// Hardcoded users
-	hash, err := bcrypt.GenerateFromPassword([]byte("1234"), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte("12345678"), bcrypt.DefaultCost)
 	if err != nil {
 		panic(err)
 	}
+
 	users := []entities.User{
 		{ID: "user1", Username: "john_doe", Name: "John Doe", Email: "john@example.com", Password: string(hash), CreatedAt: time.Now().Format(time.RFC3339)},
 		{ID: "user2", Username: "jane_smith", Name: "Jane Smith", Email: "jane@example.com", Password: string(hash), CreatedAt: time.Now().Format(time.RFC3339)},
 		{ID: "user3", Username: "bob_wilson", Name: "Bob Wilson", Email: "bob@example.com", Password: string(hash), CreatedAt: time.Now().Format(time.RFC3339)},
 	}
-
-	for _, user := range users {
-		userRepo.Create(user)
+	for _, u := range users {
+		userRepo.Create(u)
 	}
 
-	// Hardcoded posts for each user
-	posts := []entities.Post{
-		// John's posts
-		{ID: "post1", UserID: "user1", Title: "First Post!", Content: "Hello everyone! This is my first post.", Likes: 0},
-		{ID: "post2", UserID: "user1", Title: "Go Programming", Content: "Learning Go is amazing!", Likes: 0},
-
-		// Jane's posts
-		{ID: "post3", UserID: "user2", Title: "Travel Diary", Content: "Just visited Paris! 🗼", Likes: 0},
-		{ID: "post4", UserID: "user2", Title: "Cooking Tips", Content: "Here's my favorite pasta recipe", Likes: 0},
-		{ID: "post5", UserID: "user2", Title: "Fitness Journey", Content: "Day 30 of my workout challenge", Likes: 0},
-
-		// Bob's posts
-		{ID: "post6", UserID: "user3", Title: "Tech News", Content: "New iPhone just dropped!", Likes: 0},
-		{ID: "post7", UserID: "user3", Title: "Gaming", Content: "Just finished Elden Ring", Likes: 0},
+	now := time.Now()
+	videos := []entities.Video{
+		{
+			ID: "video1", UserID: "user1",
+			Title:       "Go Clean Architecture",
+			Description: "Building scalable Go services",
+			VideoURL:    "https://example.com/videos/go-clean-arch.mp4",
+			LikesCount:  0, ViewsCount: 0,
+			CreatedAt: now.Add(-2 * time.Hour).Format(time.RFC3339),
+		},
+		{
+			ID: "video2", UserID: "user2",
+			Title:       "Cursor Pagination Deep Dive",
+			Description: "Why offset pagination does not scale",
+			VideoURL:    "https://example.com/videos/cursor-pagination.mp4",
+			LikesCount:  0, ViewsCount: 0,
+			CreatedAt: now.Add(-1 * time.Hour).Format(time.RFC3339),
+		},
+		{
+			ID: "video3", UserID: "user3",
+			Title:       "Redis for View Tracking",
+			Description: "Deduplicating views at scale",
+			VideoURL:    "https://example.com/videos/redis-views.mp4",
+			LikesCount:  0, ViewsCount: 0,
+			CreatedAt: now.Format(time.RFC3339),
+		},
+	}
+	for _, v := range videos {
+		videoRepo.Create(v)
 	}
 
-	for _, post := range posts {
-		postRepo.Create(post)
+	products := []entities.Product{
+		{ID: "product1", VideoID: "video1", Name: "Go in Action Book", Price: 39.99, ImageURL: "https://example.com/images/go-book.jpg"},
+		{ID: "product2", VideoID: "video2", Name: "Backend Course", Price: 99.00, ImageURL: "https://example.com/images/course.jpg"},
+	}
+	for _, p := range products {
+		productRepo.Create(p)
 	}
 
-	// Add some pre-existing likes for demo
 	preLikes := []entities.Like{
-		{ID: uuid.New().String(), UserID: "user1", PostID: "post1", CreatedAt: "2024-01-16T09:00:00Z"},
-		{ID: uuid.New().String(), UserID: "user2", PostID: "post2", CreatedAt: "2024-01-15T10:00:00Z"},
-		{ID: uuid.New().String(), UserID: "user3", PostID: "post3", CreatedAt: "2024-01-15T11:00:00Z"},
+		{ID: uuid.New().String(), UserID: "user2", PostID: "video1", CreatedAt: time.Now().Format(time.RFC3339)},
+		{ID: uuid.New().String(), UserID: "user3", PostID: "video1", CreatedAt: time.Now().Format(time.RFC3339)},
 	}
-
 	for _, like := range preLikes {
 		likeRepo.Create(like)
-		// Update post like count
-		if post, err := postRepo.FindByID(like.PostID); err == nil {
-			post.Likes++
-			postRepo.Update(post)
-		}
+		videoRepo.IncrementLikes(like.PostID)
 	}
 }

@@ -10,7 +10,6 @@ import (
 // and returns all repository implementations.
 func InitRepositories() (
 	repositories.UserRepository,
-	repositories.PostRepository,
 	repositories.LikeRepository,
 	repositories.VideoRepository,
 	repositories.ProductRepository,
@@ -42,7 +41,6 @@ func InitRepositories() (
 	}
 
 	return newUserRepository(db),
-		newPostRepository(db),
 		newLikeRepository(db),
 		newVideoRepository(db),
 		newProductRepository(db)

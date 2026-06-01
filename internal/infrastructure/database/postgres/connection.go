@@ -104,13 +104,13 @@ func NewDB(cfg Config) (*DB, error) {
 	}, nil
 }
 
-// Migrate runs auto-migrations for all database models.
+// Migrate runs auto-migrations for all active models.
+// PostModel has been removed — the posts table is no longer part of this service.
 func (d *DB) Migrate() error {
 	log.Println("[postgres] running migrations...")
 
 	return d.WriteDB.AutoMigrate(
 		&models.UserModel{},
-		&models.PostModel{},
 		&models.LikeModel{},
 		&models.VideoModel{},
 		&models.ProductModel{},
