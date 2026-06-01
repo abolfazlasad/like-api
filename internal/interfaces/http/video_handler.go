@@ -126,9 +126,32 @@ func (h *VideoHandler) GetFeed(c *gin.Context) {
 
 	limit := 20
 	if l := c.Query("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
-			limit = parsed
+		parsed, err := strconv.Atoi(l)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, response.Response{
+				Success: false,
+				Message: "limit must be a number",
+			})
+			return
 		}
+
+		if parsed <= 0 {
+			c.JSON(http.StatusBadRequest, response.Response{
+				Success: false,
+				Message: "limit must be greater than 0",
+			})
+			return
+		}
+
+		if parsed > 100 {
+			c.JSON(http.StatusBadRequest, response.Response{
+				Success: false,
+				Message: "limit must be <= 100",
+			})
+			return
+		}
+
+		limit = parsed
 	}
 
 	output := h.getFeedUC.Execute(videousecase.GetFeedInput{

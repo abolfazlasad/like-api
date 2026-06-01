@@ -34,12 +34,7 @@ func NewGetFeedUseCase(videoRepo repositories.VideoRepository) GetFeedUseCase {
 }
 
 func (uc *getFeedUseCaseImpl) Execute(input GetFeedInput) GetFeedOutput {
-	limit := input.Limit
-	if limit <= 0 {
-		limit = 20
-	}
-
-	videos, nextCursor, err := uc.videoRepo.FindAll(input.Cursor, limit)
+	videos, nextCursor, err := uc.videoRepo.FindAll(input.Cursor, input.Limit)
 	if err != nil {
 		return GetFeedOutput{Error: err}
 	}

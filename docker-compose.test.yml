@@ -1,0 +1,28 @@
+services:
+  postgres:
+    volumes: []
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        GO_VERSION: ${GO_VERSION}
+        ALPINE_VERSION: ${ALPINE_VERSION}
+    environment:
+      - BASE_URL=http://app:8080
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-AdminPass123!}
+    depends_on:
+      app:
+        condition: service_started
+    command: >
+      sh -c "
+        for i in $$(seq 1 20); do
+          wget -qO- http://app:8080/api/v1/feed > /dev/null 2>&1 && break;
+          echo \"waiting for app... $$i/20\"; sleep 2;
+        done &&
+        go test -v -count=1 ./...
+      "

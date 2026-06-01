@@ -1,0 +1,16 @@
+ARG GO_VERSION
+ARG ALPINE_VERSION
+
+FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION}
+
+# wget is needed for the app readiness probe
+RUN apk add --no-cache wget
+
+WORKDIR /api-tests
+
+# Cache dependencies as a separate layer
+COPY api-tests/go.mod ./
+RUN go mod download
+
+# Copy test source — changes here don't invalidate the dep cache above
+COPY api-tests/ .

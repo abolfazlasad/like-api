@@ -6,7 +6,19 @@ endif
 BINARY := server
 GO_IMAGE := golang:$(GO_VERSION)-alpine$(ALPINE_VERSION)
 
-.PHONY: all test go-tidy go-get swag-init docker-build docker-down docker-up
+.PHONY: \
+	all \
+	test \
+	go-tidy \
+	go-get \
+	swag-init \
+	docker-build \
+	docker-down \
+	docker-up \
+	integration-test \
+	integration-test-build \
+	integration-test-up \
+	integration-test-down
 
 all: docker-down swag-init docker-build docker-up
 
@@ -43,3 +55,20 @@ docker-down:
 
 docker-up:
 	docker compose --env-file .versions up -d
+
+integration-test-build:
+	docker compose --env-file .versions \
+		-f docker-compose.yml \
+		-f docker-compose.test.yml \
+		build
+integration-test-up:
+	docker compose --env-file .versions \
+		-f docker-compose.yml \
+		-f docker-compose.test.yml \
+		up  --abort-on-container-exit --exit-code-from tests --attach tests;
+integration-test-down:
+	docker compose --env-file .versions \
+		-f docker-compose.yml \
+		-f docker-compose.test.yml \
+		down --remove-orphans
+integration-test: integration-test-build integration-test-up integration-test-down

@@ -6,7 +6,9 @@ FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
-COPY . .
+COPY main.go .
+COPY docs/ ./docs/
+COPY internal/ ./internal/
 RUN go build -o server ./main.go
 
 FROM alpine:${ALPINE_VERSION}
