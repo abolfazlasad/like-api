@@ -32,18 +32,6 @@ definitions:
     - title
     - video_url
     type: object
-  request.LikePostRequest:
-    properties:
-      post_id:
-        example: post1
-        type: string
-      user_id:
-        example: user1
-        type: string
-    required:
-    - post_id
-    - user_id
-    type: object
   request.LoginRequest:
     properties:
       email:
@@ -72,18 +60,6 @@ definitions:
     - name
     - password
     - username
-    type: object
-  request.UnlikePostRequest:
-    properties:
-      post_id:
-        example: post1
-        type: string
-      user_id:
-        example: user1
-        type: string
-    required:
-    - post_id
-    - user_id
     type: object
   response.AuthResponse:
     properties:
@@ -193,109 +169,6 @@ paths:
       summary: Get paginated video feed
       tags:
       - videos
-  /api/v1/likes:
-    delete:
-      consumes:
-      - application/json
-      description: Remove like from a post
-      parameters:
-      - description: Unlike request
-        in: body
-        name: unlike
-        required: true
-        schema:
-          $ref: '#/definitions/request.UnlikePostRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.Response'
-      summary: Unlike a post
-      tags:
-      - likes
-    post:
-      consumes:
-      - application/json
-      description: Like a specific post as a user
-      parameters:
-      - description: Like request
-        in: body
-        name: like
-        required: true
-        schema:
-          $ref: '#/definitions/request.LikePostRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.Response'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/response.Response'
-      summary: Like a post
-      tags:
-      - likes
-  /api/v1/posts:
-    get:
-      consumes:
-      - application/json
-      description: Get list of all posts
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.Response'
-      summary: Get all posts
-      tags:
-      - posts
-  /api/v1/posts/{post_id}/likes:
-    get:
-      consumes:
-      - application/json
-      description: Get all likes for a specific post
-      parameters:
-      - description: Post ID
-        in: path
-        name: post_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.Response'
-      summary: Get likes for a post
-      tags:
-      - likes
   /api/v1/products:
     post:
       consumes:
@@ -368,56 +241,6 @@ paths:
       summary: Get all users
       tags:
       - users
-  /api/v1/users/{user_id}/liked-posts:
-    get:
-      consumes:
-      - application/json
-      description: Get all posts liked by a specific user
-      parameters:
-      - description: User ID
-        in: path
-        name: user_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.Response'
-      summary: Get user's liked posts
-      tags:
-      - likes
-  /api/v1/users/{user_id}/posts:
-    get:
-      consumes:
-      - application/json
-      description: Get all posts from a specific user
-      parameters:
-      - description: User ID
-        in: path
-        name: user_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.Response'
-      summary: Get posts by user
-      tags:
-      - posts
   /api/v1/videos:
     post:
       consumes:
