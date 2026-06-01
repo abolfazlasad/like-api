@@ -1,4 +1,48 @@
+basePath: /
 definitions:
+  entities.Like:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      post_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  entities.Product:
+    properties:
+      id:
+        type: string
+      image_url:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      video_id:
+        type: string
+    type: object
+  entities.Video:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      likes_count:
+        type: integer
+      title:
+        type: string
+      user_id:
+        type: string
+      video_url:
+        type: string
+      views_count:
+        type: integer
+    type: object
   request.CreateProductRequest:
     properties:
       image_url:
@@ -68,12 +112,26 @@ definitions:
       user:
         $ref: '#/definitions/response.UserDTO'
     type: object
+  response.FeedResponseData:
+    properties:
+      nextCursor:
+        type: string
+      videos:
+        items:
+          $ref: '#/definitions/entities.Video'
+        type: array
+    type: object
   response.Response:
     properties:
       data: {}
       message:
         type: string
       success:
+        type: boolean
+    type: object
+  response.TrackViewResponseData:
+    properties:
+      counted:
         type: boolean
     type: object
   response.UserDTO:
@@ -84,18 +142,94 @@ definitions:
         type: string
       name:
         type: string
+      role:
+        type: string
       username:
         type: string
     type: object
+  videousecase.VideoStats:
+    properties:
+      engagement_rate:
+        type: number
+      likes:
+        type: integer
+      video_id:
+        type: string
+      views:
+        type: integer
+    type: object
+host: localhost:8080
 info:
-  contact: {}
+  contact:
+    name: API Support
+  description: |-
+    Backend for a video-based social commerce platform.
+
+    ## Authentication
+    This API uses **JWT Bearer** authentication. Obtain a token via
+    `POST /api/v1/auth/register` or `POST /api/v1/auth/login`, then pass it
+    in the `Authorization` header:
+    ```
+    Authorization: Bearer <token>
+    ```
+
+    ## Roles
+    | Role  | Description |
+    |-------|-------------|
+    | user  | Default role assigned on registration |
+    | admin | Required for admin-only endpoints (e.g. `GET /api/v1/admin/users`) |
+
+    ## Optional Authentication
+    Some endpoints (`GET /feed`, `GET /videos/:id`, `POST /videos/:id/view`,
+    `GET /videos/:id/stats`) accept but do not require a JWT. Anonymous
+    requests are served normally; authenticated requests may receive
+    personalised responses in future versions.
+  title: Video Commerce & Social Feed API
+  version: "1.0"
 paths:
+  /api/v1/admin/users:
+    get:
+      description: Returns a list of all registered users. Requires admin role.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.UserDTO'
+                  type: array
+              type: object
+        "401":
+          description: Missing or invalid JWT
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Admin access required
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: List all users
+      tags:
+      - Admin
   /api/v1/auth/login:
     post:
       consumes:
       - application/json
+      description: |-
+        Authenticates a user by email and password and returns a signed JWT.
+        Use the returned token as: `Authorization: Bearer <token>`
       parameters:
-      - description: Login request
+      - description: Login credentials
         in: body
         name: body
         required: true
@@ -107,24 +241,33 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.AuthResponse'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.AuthResponse'
+              type: object
         "400":
-          description: Bad Request
+          description: Validation error
           schema:
             $ref: '#/definitions/response.Response'
         "401":
-          description: Unauthorized
+          description: Invalid credentials
           schema:
             $ref: '#/definitions/response.Response'
       summary: Login
       tags:
-      - auth
+      - Auth
   /api/v1/auth/register:
     post:
       consumes:
       - application/json
+      description: |-
+        Creates a new user account with role "user" and returns a signed JWT.
+        The JWT must be included as a Bearer token in the Authorization header
+        for all protected endpoints.
       parameters:
-      - description: Register request
+      - description: Registration data
         in: body
         name: body
         required: true
@@ -136,26 +279,43 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/response.AuthResponse'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.AuthResponse'
+              type: object
         "400":
-          description: Bad Request
+          description: Validation error
           schema:
             $ref: '#/definitions/response.Response'
         "409":
-          description: Conflict
+          description: Email already registered
           schema:
             $ref: '#/definitions/response.Response'
       summary: Register a new user
       tags:
-      - auth
+      - Auth
   /api/v1/feed:
     get:
+      description: |-
+        Returns a cursor-paginated list of videos ordered by creation time (newest first).
+        Authentication is optional — when a valid JWT is supplied the caller is identified
+        for future personalisation features.
+
+        **Cursor pagination:** pass the `next_cursor` value from the previous response as
+        the `cursor` query parameter to fetch the next page. An empty `next_cursor` in the
+        response means there are no more pages.
       parameters:
-      - description: Pagination cursor (RFC3339 timestamp)
+      - description: Bearer {token} — optional
+        in: header
+        name: Authorization
+        type: string
+      - description: RFC3339 timestamp cursor from previous page
         in: query
         name: cursor
         type: string
-      - description: Page size (default 20, max 100)
+      - description: Page size (1–100, default 20)
         in: query
         name: limit
         type: integer
@@ -165,14 +325,26 @@ paths:
         "200":
           description: OK
           schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.FeedResponseData'
+              type: object
+        "400":
+          description: Invalid cursor format
+          schema:
             $ref: '#/definitions/response.Response'
       summary: Get paginated video feed
       tags:
-      - videos
+      - Feed
   /api/v1/products:
     post:
       consumes:
       - application/json
+      description: |-
+        Attaches a shoppable product to a video. Each video can have at most one product.
+        Returns 409 if a product is already linked to the given video.
       parameters:
       - description: Product data
         in: body
@@ -186,26 +358,40 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/entities.Product'
+              type: object
         "400":
-          description: Bad Request
+          description: Validation error
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Missing or invalid JWT
           schema:
             $ref: '#/definitions/response.Response'
         "404":
-          description: Not Found
+          description: Video not found
           schema:
             $ref: '#/definitions/response.Response'
         "409":
-          description: Conflict
+          description: Product already linked to this video
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
           schema:
             $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Create a product linked to a video
       tags:
-      - products
+      - Products
   /api/v1/products/{id}:
     get:
+      description: Returns a single product by its UUID.
       parameters:
       - description: Product ID
         in: path
@@ -218,35 +404,26 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/entities.Product'
+              type: object
         "404":
-          description: Not Found
+          description: Product not found
           schema:
             $ref: '#/definitions/response.Response'
       summary: Get a product by ID
       tags:
-      - products
-  /api/v1/users:
-    get:
-      consumes:
-      - application/json
-      description: Get list of all predefined users
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.Response'
-      summary: Get all users
-      tags:
-      - users
+      - Products
   /api/v1/videos:
     post:
       consumes:
       - application/json
+      description: Creates a new video/reel owned by the authenticated user.
       parameters:
-      - description: Video data
+      - description: Video metadata
         in: body
         name: body
         required: true
@@ -258,18 +435,67 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/entities.Video'
+              type: object
         "400":
-          description: Bad Request
+          description: Validation error
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Missing or invalid JWT
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
           schema:
             $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Upload a video
       tags:
-      - videos
+      - Videos
   /api/v1/videos/{id}:
     get:
+      description: Returns a single video. Accessible by anyone. If a valid JWT is
+        provided the request is attributed to that user.
+      parameters:
+      - description: Bearer {token} — optional, enables per-user features
+        in: header
+        name: Authorization
+        type: string
+      - description: Video ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/entities.Video'
+              type: object
+        "404":
+          description: Video not found
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get a video by ID
+      tags:
+      - Videos
+  /api/v1/videos/{id}/like:
+    post:
+      description: |-
+        Adds a like from the authenticated user to the specified video.
+        Returns 409 if the video is already liked by this user.
       parameters:
       - description: Video ID
         in: path
@@ -282,43 +508,41 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.Response'
-      summary: Get a video by ID
-      tags:
-      - videos
-  /api/v1/videos/{id}/like:
-    post:
-      parameters:
-      - description: Video ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/entities.Like'
+              type: object
+        "401":
+          description: Missing or invalid JWT
           schema:
             $ref: '#/definitions/response.Response'
         "404":
-          description: Not Found
+          description: Video not found
           schema:
             $ref: '#/definitions/response.Response'
         "409":
-          description: Conflict
+          description: Video already liked by this user
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
           schema:
             $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Like a video
       tags:
-      - videos
+      - Interactions
   /api/v1/videos/{id}/product:
     get:
+      description: Returns the single product linked to the given video, if any.
       parameters:
+      - description: Bearer {token} — optional
+        in: header
+        name: Authorization
+        type: string
       - description: Video ID
         in: path
         name: id
@@ -330,17 +554,29 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/entities.Product'
+              type: object
         "404":
-          description: Not Found
+          description: Video or product not found
           schema:
             $ref: '#/definitions/response.Response'
       summary: Get the product attached to a video
       tags:
-      - products
+      - Products
   /api/v1/videos/{id}/stats:
     get:
+      description: |-
+        Returns view count, like count, and engagement rate for the specified video.
+        Engagement rate = (likes / views) × 100. Returns 0 when views = 0.
       parameters:
+      - description: Bearer {token} — optional
+        in: header
+        name: Authorization
+        type: string
       - description: Video ID
         in: path
         name: id
@@ -352,56 +588,102 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/videousecase.VideoStats'
+              type: object
         "404":
-          description: Not Found
+          description: Video not found
           schema:
             $ref: '#/definitions/response.Response'
-      summary: Get video stats (bonus)
+      summary: Get video analytics
       tags:
-      - videos
+      - Analytics
   /api/v1/videos/{id}/unlike:
     post:
+      description: |-
+        Removes the authenticated user's like from the specified video.
+        Returns 404 if the user has not liked this video.
       parameters:
       - description: Video ID
         in: path
         name: id
         required: true
         type: string
+      produces:
+      - application/json
       responses:
         "200":
-          description: OK
+          description: Video unliked successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Missing or invalid JWT
           schema:
             $ref: '#/definitions/response.Response'
         "404":
-          description: Not Found
+          description: Like not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
           schema:
             $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Unlike a video
       tags:
-      - videos
+      - Interactions
   /api/v1/videos/{id}/view:
     post:
+      description: |-
+        Records a view for the specified video. Authentication is optional.
+
+        **Deduplication window: 1 hour.**
+        - Authenticated: deduplicated per `userID + videoID`.
+        - Anonymous: deduplicated per `clientIP + videoID`.
+
+        The response field `counted` indicates whether this call actually
+        incremented the view counter (false = duplicate within the window).
       parameters:
+      - description: Bearer {token} — optional
+        in: header
+        name: Authorization
+        type: string
       - description: Video ID
         in: path
         name: id
         required: true
         type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TrackViewResponseData'
+              type: object
         "404":
-          description: Not Found
+          description: Video not found
           schema:
             $ref: '#/definitions/response.Response'
-      security:
-      - BearerAuth: []
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
       summary: Track a video view
       tags:
-      - videos
+      - Interactions
+securityDefinitions:
+  BearerAuth:
+    description: 'Enter your JWT as: **Bearer &lt;token&gt;**'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

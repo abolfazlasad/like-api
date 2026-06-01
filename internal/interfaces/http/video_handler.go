@@ -11,6 +11,7 @@ import (
 	videousecase "like-api/internal/application/usecases/video"
 )
 
+// VideoHandler handles all video-related HTTP requests.
 type VideoHandler struct {
 	createVideoUC   videousecase.CreateVideoUseCase
 	getVideoUC      videousecase.GetVideoUseCase
@@ -41,15 +42,20 @@ func NewVideoHandler(
 	}
 }
 
-// @Summary Upload a video
-// @Tags videos
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param body body request.CreateVideoRequest true "Video data"
-// @Success 201 {object} response.Response
-// @Failure 400 {object} response.Response
-// @Router /api/v1/videos [post]
+// CreateVideo godoc
+//
+//	@Summary		Upload a video
+//	@Description	Creates a new video/reel owned by the authenticated user.
+//	@Tags			Videos
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			body	body		request.CreateVideoRequest	true	"Video metadata"
+//	@Success		201		{object}	response.Response{data=entities.Video}
+//	@Failure		400		{object}	response.Response	"Validation error"
+//	@Failure		401		{object}	response.Response	"Missing or invalid JWT"
+//	@Failure		500		{object}	response.Response	"Internal server error"
+//	@Router			/api/v1/videos [post]
 func (h *VideoHandler) CreateVideo(c *gin.Context) {
 	var req request.CreateVideoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -74,13 +80,17 @@ func (h *VideoHandler) CreateVideo(c *gin.Context) {
 	c.JSON(http.StatusCreated, response.Response{Success: true, Data: output.Video})
 }
 
-// @Summary Get a video by ID
-// @Tags videos
-// @Produce json
-// @Param id path string true "Video ID"
-// @Success 200 {object} response.Response
-// @Failure 404 {object} response.Response
-// @Router /api/v1/videos/{id} [get]
+// GetVideo godoc
+//
+//	@Summary		Get a video by ID
+//	@Description	Returns a single video. Accessible by anyone. If a valid JWT is provided the request is attributed to that user.
+//	@Tags			Videos
+//	@Produce		json
+//	@Param			Authorization	header		string	false	"Bearer {token} — optional, enables per-user features"
+//	@Param			id				path		string	true	"Video ID"
+//	@Success		200				{object}	response.Response{data=entities.Video}
+//	@Failure		404				{object}	response.Response	"Video not found"
+//	@Router			/api/v1/videos/{id} [get]
 func (h *VideoHandler) GetVideo(c *gin.Context) {
 	videoID := c.Param("id")
 
@@ -93,13 +103,24 @@ func (h *VideoHandler) GetVideo(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Response{Success: true, Data: output.Video})
 }
 
-// @Summary Get paginated video feed
-// @Tags videos
-// @Produce json
-// @Param cursor query string false "Pagination cursor (RFC3339 timestamp)"
-// @Param limit  query int    false "Page size (default 20, max 100)"
-// @Success 200 {object} response.Response
-// @Router /api/v1/feed [get]
+// GetFeed godoc
+//
+//	@Summary		Get paginated video feed
+//	@Description	Returns a cursor-paginated list of videos ordered by creation time (newest first).
+//	@Description	Authentication is optional — when a valid JWT is supplied the caller is identified
+//	@Description	for future personalisation features.
+//	@Description
+//	@Description	**Cursor pagination:** pass the `next_cursor` value from the previous response as
+//	@Description	the `cursor` query parameter to fetch the next page. An empty `next_cursor` in the
+//	@Description	response means there are no more pages.
+//	@Tags			Feed
+//	@Produce		json
+//	@Param			Authorization	header		string	false	"Bearer {token} — optional"
+//	@Param			cursor			query		string	false	"RFC3339 timestamp cursor from previous page"
+//	@Param			limit			query		int		false	"Page size (1–100, default 20)"
+//	@Success		200				{object}	response.Response{data=response.FeedResponseData}
+//	@Failure		400				{object}	response.Response	"Invalid cursor format"
+//	@Router			/api/v1/feed [get]
 func (h *VideoHandler) GetFeed(c *gin.Context) {
 	cursor := c.Query("cursor")
 
@@ -122,21 +143,28 @@ func (h *VideoHandler) GetFeed(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response.Response{
 		Success: true,
-		Data: gin.H{
-			"videos":      output.Videos,
-			"next_cursor": output.NextCursor,
+		Data: response.FeedResponseData{
+			Videos:     output.Videos,
+			NextCursor: output.NextCursor,
 		},
 	})
 }
 
-// @Summary Like a video
-// @Tags videos
-// @Security BearerAuth
-// @Param id path string true "Video ID"
-// @Success 200 {object} response.Response
-// @Failure 404 {object} response.Response
-// @Failure 409 {object} response.Response
-// @Router /api/v1/videos/{id}/like [post]
+// LikeVideo godoc
+//
+//	@Summary		Like a video
+//	@Description	Adds a like from the authenticated user to the specified video.
+//	@Description	Returns 409 if the video is already liked by this user.
+//	@Tags			Interactions
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"Video ID"
+//	@Success		200	{object}	response.Response{data=entities.Like}
+//	@Failure		401	{object}	response.Response	"Missing or invalid JWT"
+//	@Failure		404	{object}	response.Response	"Video not found"
+//	@Failure		409	{object}	response.Response	"Video already liked by this user"
+//	@Failure		500	{object}	response.Response	"Internal server error"
+//	@Router			/api/v1/videos/{id}/like [post]
 func (h *VideoHandler) LikeVideo(c *gin.Context) {
 	videoID := c.Param("id")
 	userID, _ := c.Get("userID")
@@ -166,13 +194,20 @@ func (h *VideoHandler) LikeVideo(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Response{Success: true, Message: "Video liked successfully", Data: output.Like})
 }
 
-// @Summary Unlike a video
-// @Tags videos
-// @Security BearerAuth
-// @Param id path string true "Video ID"
-// @Success 200 {object} response.Response
-// @Failure 404 {object} response.Response
-// @Router /api/v1/videos/{id}/unlike [post]
+// UnlikeVideo godoc
+//
+//	@Summary		Unlike a video
+//	@Description	Removes the authenticated user's like from the specified video.
+//	@Description	Returns 404 if the user has not liked this video.
+//	@Tags			Interactions
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"Video ID"
+//	@Success		200	{object}	response.Response	"Video unliked successfully"
+//	@Failure		401	{object}	response.Response	"Missing or invalid JWT"
+//	@Failure		404	{object}	response.Response	"Like not found"
+//	@Failure		500	{object}	response.Response	"Internal server error"
+//	@Router			/api/v1/videos/{id}/unlike [post]
 func (h *VideoHandler) UnlikeVideo(c *gin.Context) {
 	videoID := c.Param("id")
 	userID, _ := c.Get("userID")
@@ -194,19 +229,37 @@ func (h *VideoHandler) UnlikeVideo(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Response{Success: true, Message: "Video unliked successfully"})
 }
 
-// @Summary Track a video view
-// @Tags videos
-// @Security BearerAuth
-// @Param id path string true "Video ID"
-// @Success 200 {object} response.Response
-// @Failure 404 {object} response.Response
-// @Router /api/v1/videos/{id}/view [post]
+// TrackView godoc
+//
+//	@Summary		Track a video view
+//	@Description	Records a view for the specified video. Authentication is optional.
+//	@Description
+//	@Description	**Deduplication window: 1 hour.**
+//	@Description	- Authenticated: deduplicated per `userID + videoID`.
+//	@Description	- Anonymous: deduplicated per `clientIP + videoID`.
+//	@Description
+//	@Description	The response field `counted` indicates whether this call actually
+//	@Description	incremented the view counter (false = duplicate within the window).
+//	@Tags			Interactions
+//	@Produce		json
+//	@Param			Authorization	header		string	false	"Bearer {token} — optional"
+//	@Param			id				path		string	true	"Video ID"
+//	@Success		200				{object}	response.Response{data=response.TrackViewResponseData}
+//	@Failure		404				{object}	response.Response	"Video not found"
+//	@Failure		500				{object}	response.Response	"Internal server error"
+//	@Router			/api/v1/videos/{id}/view [post]
 func (h *VideoHandler) TrackView(c *gin.Context) {
 	videoID := c.Param("id")
-	userID, _ := c.Get("userID")
+
+	// Use userID when authenticated, fall back to client IP for anonymous viewers.
+	callerID, _ := c.Get("userID")
+	viewerKey, _ := callerID.(string)
+	if viewerKey == "" {
+		viewerKey = "anon:" + c.ClientIP()
+	}
 
 	output := h.trackViewUC.Execute(videousecase.TrackViewInput{
-		UserID:  userID.(string),
+		UserID:  viewerKey,
 		VideoID: videoID,
 	})
 
@@ -221,17 +274,22 @@ func (h *VideoHandler) TrackView(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response.Response{
 		Success: true,
-		Data:    gin.H{"counted": output.Counted},
+		Data:    response.TrackViewResponseData{Counted: output.Counted},
 	})
 }
 
-// @Summary Get video stats (bonus)
-// @Tags videos
-// @Produce json
-// @Param id path string true "Video ID"
-// @Success 200 {object} response.Response
-// @Failure 404 {object} response.Response
-// @Router /api/v1/videos/{id}/stats [get]
+// GetVideoStats godoc
+//
+//	@Summary		Get video analytics
+//	@Description	Returns view count, like count, and engagement rate for the specified video.
+//	@Description	Engagement rate = (likes / views) × 100. Returns 0 when views = 0.
+//	@Tags			Analytics
+//	@Produce		json
+//	@Param			Authorization	header		string	false	"Bearer {token} — optional"
+//	@Param			id				path		string	true	"Video ID"
+//	@Success		200				{object}	response.Response{data=videousecase.VideoStats}
+//	@Failure		404				{object}	response.Response	"Video not found"
+//	@Router			/api/v1/videos/{id}/stats [get]
 func (h *VideoHandler) GetVideoStats(c *gin.Context) {
 	videoID := c.Param("id")
 

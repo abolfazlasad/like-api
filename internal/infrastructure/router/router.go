@@ -10,6 +10,7 @@ import (
 	httpHandler "like-api/internal/interfaces/http"
 )
 
+// Router wires HTTP handlers to Gin routes.
 type Router struct {
 	authHandler    *httpHandler.AuthHandler
 	userHandler    *httpHandler.UserHandler
@@ -34,45 +35,70 @@ func NewRouter(
 	}
 }
 
+// Setup registers all routes and returns the configured Gin engine.
+//
+// Route groups:
+//
+//	public          — no authentication required
+//	optionalAuth    — JWT parsed when present; anonymous requests still served
+//	protected       — valid JWT required (any role)
+//	admin           — valid JWT required + role must be "admin"
 func (r *Router) Setup() *gin.Engine {
-	router := gin.Default()
-	router.Use(cors.Default())
+	engine := gin.Default()
+	engine.Use(cors.Default())
 
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Swagger UI
+	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	api := router.Group("/api/v1")
+	api := engine.Group("/api/v1")
 
-	// ── public ──────────────────────────────────────────────────────────────
-
-	api.POST("/auth/register", r.authHandler.Register)
-	api.POST("/auth/login", r.authHandler.Login)
-
-	// users
-	api.GET("/users", r.userHandler.GetUsers)
-
-	// videos — read
-	api.GET("/feed", r.videoHandler.GetFeed)
-	api.GET("/videos/:id", r.videoHandler.GetVideo)
-	api.GET("/videos/:id/stats", r.videoHandler.GetVideoStats)
-	api.GET("/videos/:id/product", r.productHandler.GetProductByVideo)
-
-	// products — read
-	api.GET("/products/:id", r.productHandler.GetProduct)
-
-	// ── protected (JWT required) ─────────────────────────────────────────────
-
-	auth := api.Group("")
-	auth.Use(middleware.AuthMiddleware(r.jwtSecret))
+	// ── public ───────────────────────────────────────────────────────────────
+	public := api.Group("")
 	{
-		// videos — write
-		auth.POST("/videos", r.videoHandler.CreateVideo)
-		auth.POST("/videos/:id/like", r.videoHandler.LikeVideo)
-		auth.POST("/videos/:id/unlike", r.videoHandler.UnlikeVideo)
-		auth.POST("/videos/:id/view", r.videoHandler.TrackView)
+		// Auth
+		public.POST("/auth/register", r.authHandler.Register)
+		public.POST("/auth/login", r.authHandler.Login)
 
-		// products — write
-		auth.POST("/products", r.productHandler.CreateProduct)
+		// Products
+		public.GET("/products/:id", r.productHandler.GetProduct)
 	}
 
-	return router
+	// ── optional auth (JWT decoded when present, never rejected) ─────────────
+	optionalAuth := api.Group("")
+	optionalAuth.Use(middleware.OptionalAuthMiddleware(r.jwtSecret))
+	{
+		// Feed & video reads — available to anonymous users too;
+		// when authenticated the userID is available for personalisation.
+		optionalAuth.GET("/feed", r.videoHandler.GetFeed)
+		optionalAuth.GET("/videos/:id", r.videoHandler.GetVideo)
+		optionalAuth.GET("/videos/:id/stats", r.videoHandler.GetVideoStats)
+		optionalAuth.GET("/videos/:id/product", r.productHandler.GetProductByVideo)
+
+		// View tracking — authenticated view counts are deduplicated per user;
+		// anonymous views are deduplicated by IP (handler falls back to IP).
+		optionalAuth.POST("/videos/:id/view", r.videoHandler.TrackView)
+	}
+
+	// ── protected — valid JWT required (role: user or admin) ─────────────────
+	protected := api.Group("")
+	protected.Use(middleware.AuthMiddleware(r.jwtSecret))
+	{
+		// Videos — write
+		protected.POST("/videos", r.videoHandler.CreateVideo)
+		protected.POST("/videos/:id/like", r.videoHandler.LikeVideo)
+		protected.POST("/videos/:id/unlike", r.videoHandler.UnlikeVideo)
+
+		// Products — write
+		protected.POST("/products", r.productHandler.CreateProduct)
+	}
+
+	// ── admin — valid JWT required with role: admin ───────────────────────────
+	admin := api.Group("/admin")
+	admin.Use(middleware.AuthMiddleware(r.jwtSecret))
+	admin.Use(middleware.AdminMiddleware())
+	{
+		admin.GET("/users", r.userHandler.GetUsers)
+	}
+
+	return engine
 }

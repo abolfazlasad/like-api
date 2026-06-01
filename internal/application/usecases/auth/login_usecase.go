@@ -41,6 +41,7 @@ func (uc *LoginUseCase) Execute(req request.LoginRequest) (*response.AuthRespons
 			Username: user.Username,
 			Name:     user.Name,
 			Email:    user.Email,
+			Role:     string(user.Role),
 		},
 	}, nil
 }

@@ -1,3 +1,38 @@
+// Package main is the entry point for the Video Commerce & Social Feed API.
+//
+//	@title			Video Commerce & Social Feed API
+//	@version		1.0
+//	@description	Backend for a video-based social commerce platform.
+//	@description
+//	@description	## Authentication
+//	@description	This API uses **JWT Bearer** authentication. Obtain a token via
+//	@description	`POST /api/v1/auth/register` or `POST /api/v1/auth/login`, then pass it
+//	@description	in the `Authorization` header:
+//	@description	```
+//	@description	Authorization: Bearer <token>
+//	@description	```
+//	@description
+//	@description	## Roles
+//	@description	| Role  | Description |
+//	@description	|-------|-------------|
+//	@description	| user  | Default role assigned on registration |
+//	@description	| admin | Required for admin-only endpoints (e.g. `GET /api/v1/admin/users`) |
+//	@description
+//	@description	## Optional Authentication
+//	@description	Some endpoints (`GET /feed`, `GET /videos/:id`, `POST /videos/:id/view`,
+//	@description	`GET /videos/:id/stats`) accept but do not require a JWT. Anonymous
+//	@description	requests are served normally; authenticated requests may receive
+//	@description	personalised responses in future versions.
+//
+//	@contact.name	API Support
+//
+//	@host		localhost:8080
+//	@BasePath	/
+//
+//	@securityDefinitions.apikey	BearerAuth
+//	@in							header
+//	@name						Authorization
+//	@description				Enter your JWT as: **Bearer &lt;token&gt;**
 package main
 
 import (

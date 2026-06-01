@@ -60,7 +60,7 @@ internal/
 │   │       ├── connection.go # DB struct, NewDB(), Migrate()
 │   │       ├── init.go       # InitRepositories() — reads env vars
 │   │       └── *_repository_impl.go
-│   ├── middleware/           # AuthMiddleware (JWT)
+│   ├── middleware/           # AuthMiddleware, OptionalAuthMiddleware, AdminMiddleware
 │   └── router/               # Gin router + route registration
 │
 └── interfaces/
@@ -71,19 +71,39 @@ internal/
         └── product_handler.go
 ```
 
-> **Note:** The legacy `post` domain (Post entity, PostRepository, post usecases,
-> PostHandler, post routes, PostModel, post memory/postgres impls) has been
-> **fully removed**. Only the `Like` entity remains and its `PostID` field is
-> reused as `VideoID` for video likes (shared `likes` table pattern).
-
 ## Domain Entities
 
 | Entity  | Key Fields |
 |---------|-----------|
-| User    | ID, Username, Name, Email, Password (bcrypt hash), CreatedAt |
+| User    | ID, Username, Name, Email, Password (bcrypt hash), **Role**, CreatedAt |
 | Video   | ID, UserID, Title, Description, VideoURL, LikesCount, ViewsCount, CreatedAt |
 | Product | ID, VideoID, Name, Price, ImageURL |
 | Like    | ID, UserID, PostID (stores VideoID), CreatedAt |
+
+## Role System
+
+Two roles are defined in `domain/entities/user.go`:
+
+| Role    | Constant        | Description |
+|---------|-----------------|-------------|
+| `user`  | `entities.RoleUser`  | Default role assigned on registration |
+| `admin` | `entities.RoleAdmin` | Required for admin-only endpoints |
+
+- The `role` field is stored in the `users` table (varchar 20, default `'user'`).
+- Role is embedded in the JWT payload (`claims.Role`) so middleware can authorize
+  without a DB lookup.
+- To promote a user to admin, update the DB row directly or add an admin promotion
+  endpoint behind another `AdminMiddleware`.
+
+## Middleware
+
+Three middleware functions live in `internal/infrastructure/middleware/auth.go`:
+
+| Middleware | Behaviour |
+|------------|-----------|
+| `AuthMiddleware(secret)` | Rejects requests without a valid Bearer JWT (401). Sets `userID`, `username`, `role` in Gin context. |
+| `OptionalAuthMiddleware(secret)` | Parses the JWT when present but never blocks. Sets `userID`/`username`/`role` to empty strings for anonymous callers. |
+| `AdminMiddleware()` | Must follow `AuthMiddleware`. Rejects non-admin callers with 403. |
 
 ## Repository Interfaces
 
@@ -96,28 +116,38 @@ internal/
 
 ## API Endpoints
 
-### Public (no auth)
+### Public (no auth required)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v1/auth/register` | Register new user |
+| POST | `/api/v1/auth/register` | Register → JWT (role: user) |
 | POST | `/api/v1/auth/login` | Login → JWT |
-| GET  | `/api/v1/users` | List all users |
+| GET  | `/api/v1/products/:id` | Get single product |
+
+### Optional Auth (JWT decoded when present, never rejected)
+
+| Method | Path | Description |
+|--------|------|-------------|
 | GET  | `/api/v1/feed?cursor=&limit=` | Cursor-paginated video feed |
 | GET  | `/api/v1/videos/:id` | Get single video |
 | GET  | `/api/v1/videos/:id/stats` | Views, likes, engagement rate |
 | GET  | `/api/v1/videos/:id/product` | Product linked to a video |
-| GET  | `/api/v1/products/:id` | Get single product |
+| POST | `/api/v1/videos/:id/view` | Track view (auth → userID dedup; anon → IP dedup) |
 
-### Protected (Bearer JWT required)
+### Protected (Bearer JWT required — any role)
 
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/videos` | Upload video |
 | POST | `/api/v1/videos/:id/like` | Like video (409 if duplicate) |
 | POST | `/api/v1/videos/:id/unlike` | Unlike video (404 if not liked) |
-| POST | `/api/v1/videos/:id/view` | Track view (dedup 1 h window) |
 | POST | `/api/v1/products` | Create product for a video |
+
+### Admin (Bearer JWT required — role: admin)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/admin/users` | List all users |
 
 ## Pagination Strategy — Cursor-Based
 
@@ -138,61 +168,63 @@ GET /api/v1/feed?cursor=2024-01-15T10:00:00Z&limit=20
 - Cursor uses a range predicate on an indexed column — O(log N) cost.
 - Stable under concurrent inserts: new rows don't shift subsequent pages.
 
-**Memory implementation** sorts the in-memory slice by `created_at DESC` and
-applies the same exclusive-bound filter for API parity with the postgres impl.
-
 ## View Deduplication
 
-An **in-process time-window map** (`sync.Mutex` + `map[string]viewRecord`) prevents
-the same user from inflating view counts within a 1-hour window.
+An **in-process time-window map** prevents duplicate view counts within a 1-hour window.
 
 ```
-key = userID + ":" + videoID
+key = viewerKey + ":" + videoID
 window = 1 hour
 ```
 
+- **Authenticated** viewer: `viewerKey = userID`
+- **Anonymous** viewer: `viewerKey = "anon:" + clientIP`
+
 Trade-off: resets on process restart; does not work across multiple instances.
-Production path: replace with `SETEX "view:{userID}:{videoID}" 3600 1` in Redis.
+Production path: replace with `SETEX "view:{viewerKey}:{videoID}" 3600 1` in Redis.
 
 ## Like System
 
 - Duplicate-like prevention: `LikeRepository.Exists()` check before insert +
   `ON CONFLICT DO NOTHING` + unique index `(user_id, post_id)` at DB level.
-- Counters updated atomically: `UPDATE videos SET likes_count = likes_count + 1`
-  (no read-modify-write race).
+- Counters updated atomically: `UPDATE videos SET likes_count = likes_count + 1`.
 - Unlike decrements with `GREATEST(likes_count - 1, 0)` to prevent negative values.
 
 ## Database Design
 
 | Table | Notable indexes |
 |-------|----------------|
-| users | `email` unique, `username` unique |
+| users | `email` unique, `username` unique, `role` default `'user'` |
 | videos | `created_at DESC` (cursor pagination), `user_id` |
 | products | `video_id` unique (one product per video) |
 | likes | composite unique `(user_id, post_id)`, `post_id` index |
+
+## Swagger / API Docs
+
+- Docs are generated by `swag init` and served at `GET /swagger/index.html`.
+- Security scheme is defined in `main.go` via `@securityDefinitions.apikey BearerAuth`.
+- All handlers use `godoc`-style Swagger annotations with `@Security BearerAuth` on
+  protected endpoints and explicit `Authorization` header param docs on optional-auth endpoints.
+- Run `swag init` after any change to handler annotations before rebuilding.
 
 ## Switching Between Memory and Postgres
 
 **Postgres (default / Docker):**
 ```go
-// main.go
 userRepo, likeRepo, videoRepo, productRepo := postgres.InitRepositories()
 ```
 
 **Memory (local dev without Docker):**
 ```go
-// main.go
 userRepo, likeRepo, videoRepo, productRepo := memory.InitRepositories(true)
 ```
-
-Set `DB_HOST` env var for postgres; leave unset to get a clear panic message.
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `JWT_SECRET` | `dev-secret-change-in-production` | JWT signing secret |
-| `DB_HOST` | — (required) | Postgres host |
+| `DB_HOST` | — (required for postgres) | Postgres host |
 | `DB_PORT` | `5432` | Postgres port |
 | `DB_USER` | `appuser` | Postgres user |
 | `DB_PASSWORD` | `secret` | Postgres password |
@@ -204,6 +236,8 @@ Set `DB_HOST` env var for postgres; leave unset to get a clear panic message.
 - **New entity**: add to `domain/entities/`, define interface in `domain/repositories/`,
   implement in both `memory/` and `postgres/`, write use cases, handler, register routes,
   add to `postgres/connection.go` Migrate().
+- **Admin promotion endpoint**: add `POST /api/v1/admin/users/:id/promote` behind
+  `AuthMiddleware + AdminMiddleware`, update user role in DB.
 - **Redis view dedup**: replace `globalViewTracker` in `track_view.go` with a Redis
   `SETEX` call; inject the Redis client via the use-case constructor.
 - **Background view flush**: buffer view events in Redis; a worker goroutine drains
@@ -215,7 +249,11 @@ Set `DB_HOST` env var for postgres; leave unset to get a clear panic message.
 ## Seed Data (Memory Mode)
 
 When `initDefaultData=true`:
-- 3 users: `john@example.com`, `jane@example.com`, `bob@example.com` (password: `12345678`)
-- 3 videos across those users
+- 4 users (password for all: `12345678`):
+  - `admin@example.com` — role: **admin**
+  - `john@example.com` — role: user
+  - `jane@example.com` — role: user
+  - `bob@example.com` — role: user
+- 3 videos across john, jane, bob
 - 2 products linked to videos 1 and 2
 - 2 pre-existing likes on video1

@@ -38,6 +38,7 @@ func (uc *RegisterUseCase) Execute(req request.RegisterRequest) (*response.AuthR
 		Name:      req.Name,
 		Email:     req.Email,
 		Password:  string(hash),
+		Role:      entities.RoleUser,
 		CreatedAt: time.Now().Format(time.RFC3339),
 	}
 
@@ -57,6 +58,7 @@ func (uc *RegisterUseCase) Execute(req request.RegisterRequest) (*response.AuthR
 			Username: user.Username,
 			Name:     user.Name,
 			Email:    user.Email,
+			Role:     string(user.Role),
 		},
 	}, nil
 }

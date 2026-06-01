@@ -14,6 +14,7 @@ type UserModel struct {
 	Name      string    `gorm:"not null;type:varchar(100)"`
 	Email     string    `gorm:"uniqueIndex;not null;type:varchar(255)"`
 	Password  string    `gorm:"not null;type:varchar(255)"`
+	Role      string    `gorm:"not null;type:varchar(20);default:'user'"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 }
 
@@ -26,6 +27,7 @@ func (m UserModel) ToEntity() entities.User {
 		Name:      m.Name,
 		Email:     m.Email,
 		Password:  m.Password,
+		Role:      entities.Role(m.Role),
 		CreatedAt: m.CreatedAt.Format(time.RFC3339),
 	}
 }
@@ -36,12 +38,18 @@ func UserModelFromEntity(u entities.User) UserModel {
 		createdAt, _ = time.Parse(time.RFC3339, u.CreatedAt)
 	}
 
+	role := string(u.Role)
+	if role == "" {
+		role = string(entities.RoleUser)
+	}
+
 	return UserModel{
 		ID:        u.ID,
 		Username:  u.Username,
 		Name:      u.Name,
 		Email:     u.Email,
 		Password:  u.Password,
+		Role:      role,
 		CreatedAt: createdAt,
 	}
 }

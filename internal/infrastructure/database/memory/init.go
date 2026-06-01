@@ -41,9 +41,42 @@ func initData(
 	}
 
 	users := []entities.User{
-		{ID: "user1", Username: "john_doe", Name: "John Doe", Email: "john@example.com", Password: string(hash), CreatedAt: time.Now().Format(time.RFC3339)},
-		{ID: "user2", Username: "jane_smith", Name: "Jane Smith", Email: "jane@example.com", Password: string(hash), CreatedAt: time.Now().Format(time.RFC3339)},
-		{ID: "user3", Username: "bob_wilson", Name: "Bob Wilson", Email: "bob@example.com", Password: string(hash), CreatedAt: time.Now().Format(time.RFC3339)},
+		{
+			ID:        "user-admin",
+			Username:  "admin",
+			Name:      "Admin",
+			Email:     "admin@example.com",
+			Password:  string(hash),
+			Role:      entities.RoleAdmin,
+			CreatedAt: time.Now().Format(time.RFC3339),
+		},
+		{
+			ID:        "user1",
+			Username:  "john_doe",
+			Name:      "John Doe",
+			Email:     "john@example.com",
+			Password:  string(hash),
+			Role:      entities.RoleUser,
+			CreatedAt: time.Now().Format(time.RFC3339),
+		},
+		{
+			ID:        "user2",
+			Username:  "jane_smith",
+			Name:      "Jane Smith",
+			Email:     "jane@example.com",
+			Password:  string(hash),
+			Role:      entities.RoleUser,
+			CreatedAt: time.Now().Format(time.RFC3339),
+		},
+		{
+			ID:        "user3",
+			Username:  "bob_wilson",
+			Name:      "Bob Wilson",
+			Email:     "bob@example.com",
+			Password:  string(hash),
+			Role:      entities.RoleUser,
+			CreatedAt: time.Now().Format(time.RFC3339),
+		},
 	}
 	for _, u := range users {
 		userRepo.Create(u)

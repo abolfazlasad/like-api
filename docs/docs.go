@@ -9,14 +9,75 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "contact": {
+            "name": "API Support"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/admin/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a list of all registered users. Requires admin role.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List all users",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.UserDTO"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid JWT",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Admin access required",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
+                "description": "Authenticates a user by email and password and returns a signed JWT.\nUse the returned token as: ` + "`" + `Authorization: Bearer \u003ctoken\u003e` + "`" + `",
                 "consumes": [
                     "application/json"
                 ],
@@ -24,12 +85,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "Auth"
                 ],
                 "summary": "Login",
                 "parameters": [
                     {
-                        "description": "Login request",
+                        "description": "Login credentials",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -42,17 +103,29 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.AuthResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.AuthResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Validation error",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Invalid credentials",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -62,6 +135,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/register": {
             "post": {
+                "description": "Creates a new user account with role \"user\" and returns a signed JWT.\nThe JWT must be included as a Bearer token in the Authorization header\nfor all protected endpoints.",
                 "consumes": [
                     "application/json"
                 ],
@@ -69,12 +143,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "Auth"
                 ],
                 "summary": "Register a new user",
                 "parameters": [
                     {
-                        "description": "Register request",
+                        "description": "Registration data",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -87,17 +161,29 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/response.AuthResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.AuthResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Validation error",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "409": {
-                        "description": "Conflict",
+                        "description": "Email already registered",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -107,23 +193,30 @@ const docTemplate = `{
         },
         "/api/v1/feed": {
             "get": {
+                "description": "Returns a cursor-paginated list of videos ordered by creation time (newest first).\nAuthentication is optional — when a valid JWT is supplied the caller is identified\nfor future personalisation features.\n\n**Cursor pagination:** pass the ` + "`" + `next_cursor` + "`" + ` value from the previous response as\nthe ` + "`" + `cursor` + "`" + ` query parameter to fetch the next page. An empty ` + "`" + `next_cursor` + "`" + ` in the\nresponse means there are no more pages.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "videos"
+                    "Feed"
                 ],
                 "summary": "Get paginated video feed",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Pagination cursor (RFC3339 timestamp)",
+                        "description": "Bearer {token} — optional",
+                        "name": "Authorization",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "RFC3339 timestamp cursor from previous page",
                         "name": "cursor",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Page size (default 20, max 100)",
+                        "description": "Page size (1–100, default 20)",
                         "name": "limit",
                         "in": "query"
                     }
@@ -131,6 +224,24 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.FeedResponseData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid cursor format",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -145,6 +256,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Attaches a shoppable product to a video. Each video can have at most one product.\nReturns 409 if a product is already linked to the given video.",
                 "consumes": [
                     "application/json"
                 ],
@@ -152,7 +264,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "products"
+                    "Products"
                 ],
                 "summary": "Create a product linked to a video",
                 "parameters": [
@@ -170,23 +282,47 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entities.Product"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid JWT",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Video not found",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "409": {
-                        "description": "Conflict",
+                        "description": "Product already linked to this video",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -196,11 +332,12 @@ const docTemplate = `{
         },
         "/api/v1/products/{id}": {
             "get": {
+                "description": "Returns a single product by its UUID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "products"
+                    "Products"
                 ],
                 "summary": "Get a product by ID",
                 "parameters": [
@@ -216,34 +353,23 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entities.Product"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users": {
-            "get": {
-                "description": "Get list of all predefined users",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Get all users",
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                        "description": "Product not found",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -258,6 +384,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Creates a new video/reel owned by the authenticated user.",
                 "consumes": [
                     "application/json"
                 ],
@@ -265,12 +392,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "videos"
+                    "Videos"
                 ],
                 "summary": "Upload a video",
                 "parameters": [
                     {
-                        "description": "Video data",
+                        "description": "Video metadata",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -283,11 +410,35 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entities.Video"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid JWT",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -297,14 +448,21 @@ const docTemplate = `{
         },
         "/api/v1/videos/{id}": {
             "get": {
+                "description": "Returns a single video. Accessible by anyone. If a valid JWT is provided the request is attributed to that user.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "videos"
+                    "Videos"
                 ],
                 "summary": "Get a video by ID",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {token} — optional, enables per-user features",
+                        "name": "Authorization",
+                        "in": "header"
+                    },
                     {
                         "type": "string",
                         "description": "Video ID",
@@ -317,11 +475,23 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entities.Video"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Video not found",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -336,8 +506,12 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Adds a like from the authenticated user to the specified video.\nReturns 409 if the video is already liked by this user.",
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
-                    "videos"
+                    "Interactions"
                 ],
                 "summary": "Like a video",
                 "parameters": [
@@ -353,17 +527,41 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entities.Like"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid JWT",
+                        "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Video not found",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "409": {
-                        "description": "Conflict",
+                        "description": "Video already liked by this user",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -373,14 +571,21 @@ const docTemplate = `{
         },
         "/api/v1/videos/{id}/product": {
             "get": {
+                "description": "Returns the single product linked to the given video, if any.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "products"
+                    "Products"
                 ],
                 "summary": "Get the product attached to a video",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {token} — optional",
+                        "name": "Authorization",
+                        "in": "header"
+                    },
                     {
                         "type": "string",
                         "description": "Video ID",
@@ -393,11 +598,23 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entities.Product"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Video or product not found",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -407,14 +624,21 @@ const docTemplate = `{
         },
         "/api/v1/videos/{id}/stats": {
             "get": {
+                "description": "Returns view count, like count, and engagement rate for the specified video.\nEngagement rate = (likes / views) × 100. Returns 0 when views = 0.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "videos"
+                    "Analytics"
                 ],
-                "summary": "Get video stats (bonus)",
+                "summary": "Get video analytics",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {token} — optional",
+                        "name": "Authorization",
+                        "in": "header"
+                    },
                     {
                         "type": "string",
                         "description": "Video ID",
@@ -427,11 +651,23 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/videousecase.VideoStats"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Video not found",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -446,8 +682,12 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Removes the authenticated user's like from the specified video.\nReturns 404 if the user has not liked this video.",
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
-                    "videos"
+                    "Interactions"
                 ],
                 "summary": "Unlike a video",
                 "parameters": [
@@ -461,13 +701,25 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Video unliked successfully",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid JWT",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Like not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -477,16 +729,21 @@ const docTemplate = `{
         },
         "/api/v1/videos/{id}/view": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
+                "description": "Records a view for the specified video. Authentication is optional.\n\n**Deduplication window: 1 hour.**\n- Authenticated: deduplicated per ` + "`" + `userID + videoID` + "`" + `.\n- Anonymous: deduplicated per ` + "`" + `clientIP + videoID` + "`" + `.\n\nThe response field ` + "`" + `counted` + "`" + ` indicates whether this call actually\nincremented the view counter (false = duplicate within the window).",
+                "produces": [
+                    "application/json"
                 ],
                 "tags": [
-                    "videos"
+                    "Interactions"
                 ],
                 "summary": "Track a video view",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {token} — optional",
+                        "name": "Authorization",
+                        "in": "header"
+                    },
                     {
                         "type": "string",
                         "description": "Video ID",
@@ -499,11 +756,29 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.TrackViewResponseData"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Video not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -513,6 +788,72 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "entities.Like": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "post_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.Product": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "video_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.Video": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "likes_count": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "video_url": {
+                    "type": "string"
+                },
+                "views_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "request.CreateProductRequest": {
             "type": "object",
             "required": [
@@ -611,6 +952,20 @@ const docTemplate = `{
                 }
             }
         },
+        "response.FeedResponseData": {
+            "type": "object",
+            "properties": {
+                "nextCursor": {
+                    "type": "string"
+                },
+                "videos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entities.Video"
+                    }
+                }
+            }
+        },
         "response.Response": {
             "type": "object",
             "properties": {
@@ -619,6 +974,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.TrackViewResponseData": {
+            "type": "object",
+            "properties": {
+                "counted": {
                     "type": "boolean"
                 }
             }
@@ -635,22 +998,50 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "role": {
+                    "type": "string"
+                },
                 "username": {
                     "type": "string"
                 }
             }
+        },
+        "videousecase.VideoStats": {
+            "type": "object",
+            "properties": {
+                "engagement_rate": {
+                    "type": "number"
+                },
+                "likes": {
+                    "type": "integer"
+                },
+                "video_id": {
+                    "type": "string"
+                },
+                "views": {
+                    "type": "integer"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Enter your JWT as: **Bearer \u0026lt;token\u0026gt;**",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
-	Host:             "",
-	BasePath:         "",
+	Version:          "1.0",
+	Host:             "localhost:8080",
+	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Video Commerce & Social Feed API",
+	Description:      "Backend for a video-based social commerce platform.\n\n## Authentication\nThis API uses **JWT Bearer** authentication. Obtain a token via\n`POST /api/v1/auth/register` or `POST /api/v1/auth/login`, then pass it\nin the `Authorization` header:\n```\nAuthorization: Bearer <token>\n```\n\n## Roles\n| Role  | Description |\n|-------|-------------|\n| user  | Default role assigned on registration |\n| admin | Required for admin-only endpoints (e.g. `GET /api/v1/admin/users`) |\n\n## Optional Authentication\nSome endpoints (`GET /feed`, `GET /videos/:id`, `POST /videos/:id/view`,\n`GET /videos/:id/stats`) accept but do not require a JWT. Anonymous\nrequests are served normally; authenticated requests may receive\npersonalised responses in future versions.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
