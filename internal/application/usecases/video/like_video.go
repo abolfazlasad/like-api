@@ -63,7 +63,7 @@ func (uc *likeVideoUseCaseImpl) Execute(input LikeVideoInput) LikeVideoOutput {
 		ID:        uuid.New().String(),
 		UserID:    input.UserID,
 		PostID:    input.VideoID,
-		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+		CreatedAt: time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	if err := uc.likeRepo.Create(like); err != nil {

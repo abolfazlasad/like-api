@@ -48,7 +48,7 @@ func (uc *createVideoUseCaseImpl) Execute(input CreateVideoInput) CreateVideoOut
 		VideoURL:    input.VideoURL,
 		LikesCount:  0,
 		ViewsCount:  0,
-		CreatedAt:   time.Now().UTC().Format(time.RFC3339),
+		CreatedAt:   time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	if err := uc.videoRepo.Create(video); err != nil {

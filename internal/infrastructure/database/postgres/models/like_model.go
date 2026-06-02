@@ -22,14 +22,14 @@ func (m LikeModel) ToEntity() entities.Like {
 		ID:        m.ID,
 		UserID:    m.UserID,
 		PostID:    m.PostID,
-		CreatedAt: m.CreatedAt.Format(time.RFC3339),
+		CreatedAt: m.CreatedAt.Format(time.RFC3339Nano),
 	}
 }
 
 func LikeModelFromEntity(l entities.Like) LikeModel {
 	var createdAt time.Time
 	if l.CreatedAt != "" {
-		createdAt, _ = time.Parse(time.RFC3339, l.CreatedAt)
+		createdAt, _ = time.Parse(time.RFC3339Nano, l.CreatedAt)
 	}
 	return LikeModel{
 		ID:        l.ID,

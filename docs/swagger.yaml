@@ -311,7 +311,7 @@ paths:
         in: header
         name: Authorization
         type: string
-      - description: RFC3339 timestamp cursor from previous page
+      - description: RFC3339Nano timestamp cursor from previous page
         in: query
         name: cursor
         type: string
@@ -463,10 +463,6 @@ paths:
       description: Returns a single video. Accessible by anyone. If a valid JWT is
         provided the request is attributed to that user.
       parameters:
-      - description: Bearer {token} — optional, enables per-user features
-        in: header
-        name: Authorization
-        type: string
       - description: Video ID
         in: path
         name: id
@@ -539,10 +535,6 @@ paths:
     get:
       description: Returns the single product linked to the given video, if any.
       parameters:
-      - description: Bearer {token} — optional
-        in: header
-        name: Authorization
-        type: string
       - description: Video ID
         in: path
         name: id
@@ -573,10 +565,6 @@ paths:
         Returns view count, like count, and engagement rate for the specified video.
         Engagement rate = (likes / views) × 100. Returns 0 when views = 0.
       parameters:
-      - description: Bearer {token} — optional
-        in: header
-        name: Authorization
-        type: string
       - description: Video ID
         in: path
         name: id

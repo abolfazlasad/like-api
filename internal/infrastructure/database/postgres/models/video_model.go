@@ -29,14 +29,14 @@ func (m VideoModel) ToEntity() entities.Video {
 		VideoURL:    m.VideoURL,
 		LikesCount:  m.LikesCount,
 		ViewsCount:  m.ViewsCount,
-		CreatedAt:   m.CreatedAt.Format(time.RFC3339),
+		CreatedAt:   m.CreatedAt.Format(time.RFC3339Nano),
 	}
 }
 
 func VideoModelFromEntity(v entities.Video) VideoModel {
 	var createdAt time.Time
 	if v.CreatedAt != "" {
-		createdAt, _ = time.Parse(time.RFC3339, v.CreatedAt)
+		createdAt, _ = time.Parse(time.RFC3339Nano, v.CreatedAt)
 	}
 	return VideoModel{
 		ID:          v.ID,

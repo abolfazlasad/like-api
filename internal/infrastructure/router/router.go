@@ -45,7 +45,15 @@ func NewRouter(
 //	admin           — valid JWT required + role must be "admin"
 func (r *Router) Setup() *gin.Engine {
 	engine := gin.Default()
-	engine.Use(cors.Default())
+	engine.Use(cors.New(cors.Config{
+		AllowAllOrigins: true, // Replace for production
+		AllowMethods: []string{
+			"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS",
+		},
+		AllowHeaders: []string{
+			"Origin", "Content-Type", "Accept", "Authorization",
+		},
+	}))
 
 	// Swagger UI
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -59,8 +67,13 @@ func (r *Router) Setup() *gin.Engine {
 		public.POST("/auth/register", r.authHandler.Register)
 		public.POST("/auth/login", r.authHandler.Login)
 
+		// video
+		public.GET("/videos/:id", r.videoHandler.GetVideo)
+		public.GET("/videos/:id/stats", r.videoHandler.GetVideoStats)
+
 		// Products
 		public.GET("/products/:id", r.productHandler.GetProduct)
+		public.GET("/videos/:id/product", r.productHandler.GetProductByVideo)
 	}
 
 	// ── optional auth (JWT decoded when present, never rejected) ─────────────
@@ -70,9 +83,6 @@ func (r *Router) Setup() *gin.Engine {
 		// Feed & video reads — available to anonymous users too;
 		// when authenticated the userID is available for personalisation.
 		optionalAuth.GET("/feed", r.videoHandler.GetFeed)
-		optionalAuth.GET("/videos/:id", r.videoHandler.GetVideo)
-		optionalAuth.GET("/videos/:id/stats", r.videoHandler.GetVideoStats)
-		optionalAuth.GET("/videos/:id/product", r.productHandler.GetProductByVideo)
 
 		// View tracking — authenticated view counts are deduplicated per user;
 		// anonymous views are deduplicated by IP (handler falls back to IP).

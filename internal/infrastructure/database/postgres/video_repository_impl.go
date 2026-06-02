@@ -51,7 +51,7 @@ func (r *videoRepositoryImpl) FindByID(id string) (entities.Video, error) {
 //   - It stays stable even when new videos are inserted between pages.
 //
 // The next cursor returned to the caller is the created_at value of the
-// last item in the current page, encoded as RFC3339.  An empty string
+// last item in the current page, encoded as RFC3339Nano.  An empty string
 // means there are no more pages.
 func (r *videoRepositoryImpl) FindAll(cursor string, limit int) ([]entities.Video, string, error) {
 	if limit <= 0 || limit > 100 {
@@ -61,7 +61,7 @@ func (r *videoRepositoryImpl) FindAll(cursor string, limit int) ([]entities.Vide
 	query := r.readDB.Order("created_at DESC").Limit(limit + 1)
 
 	if cursor != "" {
-		cursorTime, err := time.Parse(time.RFC3339, cursor)
+		cursorTime, err := time.Parse(time.RFC3339Nano, cursor)
 		if err != nil {
 			return nil, "", errors.New("invalid cursor format")
 		}
@@ -85,8 +85,8 @@ func (r *videoRepositoryImpl) FindAll(cursor string, limit int) ([]entities.Vide
 
 	nextCursor := ""
 	if hasMore && len(videoModels) > 0 {
-		lastCreatedAt, _ := time.Parse(time.RFC3339, videos[len(videos)-1].CreatedAt)
-		nextCursor = lastCreatedAt.Format(time.RFC3339)
+		lastCreatedAt, _ := time.Parse(time.RFC3339Nano, videos[len(videos)-1].CreatedAt)
+		nextCursor = lastCreatedAt.Format(time.RFC3339Nano)
 	}
 
 	return videos, nextCursor, nil

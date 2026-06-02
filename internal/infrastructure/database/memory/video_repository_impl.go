@@ -40,7 +40,7 @@ func (r *videoRepositoryImpl) FindByID(id string) (entities.Video, error) {
 }
 
 // FindAll implements cursor-based pagination over an in-memory map.
-// Videos are sorted by created_at DESC; the cursor is an RFC3339 timestamp
+// Videos are sorted by created_at DESC; the cursor is an RFC3339Nano timestamp
 // marking the exclusive upper bound (same contract as the postgres impl).
 func (r *videoRepositoryImpl) FindAll(cursor string, limit int) ([]entities.Video, string, error) {
 	if limit <= 0 || limit > 100 {
@@ -59,13 +59,13 @@ func (r *videoRepositoryImpl) FindAll(cursor string, limit int) ([]entities.Vide
 	})
 
 	if cursor != "" {
-		cursorTime, err := time.Parse(time.RFC3339, cursor)
+		cursorTime, err := time.Parse(time.RFC3339Nano, cursor)
 		if err != nil {
 			return nil, "", errors.New("invalid cursor format")
 		}
 		filtered := all[:0]
 		for _, v := range all {
-			t, _ := time.Parse(time.RFC3339, v.CreatedAt)
+			t, _ := time.Parse(time.RFC3339Nano, v.CreatedAt)
 			if t.Before(cursorTime) {
 				filtered = append(filtered, v)
 			}

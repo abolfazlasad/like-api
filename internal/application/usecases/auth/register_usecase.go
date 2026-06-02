@@ -39,7 +39,7 @@ func (uc *RegisterUseCase) Execute(req request.RegisterRequest) (*response.AuthR
 		Email:     req.Email,
 		Password:  string(hash),
 		Role:      entities.RoleUser,
-		CreatedAt: time.Now().Format(time.RFC3339),
+		CreatedAt: time.Now().Format(time.RFC3339Nano),
 	}
 
 	if err := uc.userRepo.Create(user); err != nil {

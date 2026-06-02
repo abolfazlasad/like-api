@@ -51,7 +51,7 @@ func SeedAdmin(userRepo repositories.UserRepository) {
 		Email:     email,
 		Password:  string(hashed),
 		Role:      entities.RoleAdmin,
-		CreatedAt: time.Now().Format(time.RFC3339),
+		CreatedAt: time.Now().Format(time.RFC3339Nano),
 	}
 
 	if err := userRepo.Create(admin); err != nil {
@@ -84,7 +84,7 @@ func InitData(
 			Email:     "admin@example.com",
 			Password:  string(hashAdmin),
 			Role:      entities.RoleAdmin,
-			CreatedAt: time.Now().Format(time.RFC3339),
+			CreatedAt: time.Now().Format(time.RFC3339Nano),
 		},
 		{
 			ID:        "user1",
@@ -93,7 +93,7 @@ func InitData(
 			Email:     "john@example.com",
 			Password:  string(hash),
 			Role:      entities.RoleUser,
-			CreatedAt: time.Now().Format(time.RFC3339),
+			CreatedAt: time.Now().Format(time.RFC3339Nano),
 		},
 		{
 			ID:        "user2",
@@ -102,7 +102,7 @@ func InitData(
 			Email:     "jane@example.com",
 			Password:  string(hash),
 			Role:      entities.RoleUser,
-			CreatedAt: time.Now().Format(time.RFC3339),
+			CreatedAt: time.Now().Format(time.RFC3339Nano),
 		},
 		{
 			ID:        "user3",
@@ -111,7 +111,7 @@ func InitData(
 			Email:     "bob@example.com",
 			Password:  string(hash),
 			Role:      entities.RoleUser,
-			CreatedAt: time.Now().Format(time.RFC3339),
+			CreatedAt: time.Now().Format(time.RFC3339Nano),
 		},
 	}
 	for _, u := range users {
@@ -126,7 +126,7 @@ func InitData(
 			Description: "Building scalable Go services",
 			VideoURL:    "https://example.com/videos/go-clean-arch.mp4",
 			LikesCount:  0, ViewsCount: 0,
-			CreatedAt: now.Add(-2 * time.Hour).Format(time.RFC3339),
+			CreatedAt: now.Add(-2 * time.Hour).Format(time.RFC3339Nano),
 		},
 		{
 			ID: "video2", UserID: "user2",
@@ -134,7 +134,7 @@ func InitData(
 			Description: "Why offset pagination does not scale",
 			VideoURL:    "https://example.com/videos/cursor-pagination.mp4",
 			LikesCount:  0, ViewsCount: 0,
-			CreatedAt: now.Add(-1 * time.Hour).Format(time.RFC3339),
+			CreatedAt: now.Add(-1 * time.Hour).Format(time.RFC3339Nano),
 		},
 		{
 			ID: "video3", UserID: "user3",
@@ -142,7 +142,7 @@ func InitData(
 			Description: "Deduplicating views at scale",
 			VideoURL:    "https://example.com/videos/redis-views.mp4",
 			LikesCount:  0, ViewsCount: 0,
-			CreatedAt: now.Format(time.RFC3339),
+			CreatedAt: now.Format(time.RFC3339Nano),
 		},
 	}
 	for _, v := range videos {
@@ -158,8 +158,8 @@ func InitData(
 	}
 
 	preLikes := []entities.Like{
-		{ID: uuid.New().String(), UserID: "user2", PostID: "video1", CreatedAt: time.Now().Format(time.RFC3339)},
-		{ID: uuid.New().String(), UserID: "user3", PostID: "video1", CreatedAt: time.Now().Format(time.RFC3339)},
+		{ID: uuid.New().String(), UserID: "user2", PostID: "video1", CreatedAt: time.Now().Format(time.RFC3339Nano)},
+		{ID: uuid.New().String(), UserID: "user3", PostID: "video1", CreatedAt: time.Now().Format(time.RFC3339Nano)},
 	}
 	for _, like := range preLikes {
 		likeRepo.Create(like)

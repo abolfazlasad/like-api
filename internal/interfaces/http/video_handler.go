@@ -86,7 +86,6 @@ func (h *VideoHandler) CreateVideo(c *gin.Context) {
 //	@Description	Returns a single video. Accessible by anyone. If a valid JWT is provided the request is attributed to that user.
 //	@Tags			Videos
 //	@Produce		json
-//	@Param			Authorization	header		string	false	"Bearer {token} — optional, enables per-user features"
 //	@Param			id				path		string	true	"Video ID"
 //	@Success		200				{object}	response.Response{data=entities.Video}
 //	@Failure		404				{object}	response.Response	"Video not found"
@@ -116,7 +115,7 @@ func (h *VideoHandler) GetVideo(c *gin.Context) {
 //	@Tags			Feed
 //	@Produce		json
 //	@Param			Authorization	header		string	false	"Bearer {token} — optional"
-//	@Param			cursor			query		string	false	"RFC3339 timestamp cursor from previous page"
+//	@Param			cursor			query		string	false	"RFC3339Nano timestamp cursor from previous page"
 //	@Param			limit			query		int		false	"Page size (1–100, default 20)"
 //	@Success		200				{object}	response.Response{data=response.FeedResponseData}
 //	@Failure		400				{object}	response.Response	"Invalid cursor format"
@@ -308,7 +307,6 @@ func (h *VideoHandler) TrackView(c *gin.Context) {
 //	@Description	Engagement rate = (likes / views) × 100. Returns 0 when views = 0.
 //	@Tags			Analytics
 //	@Produce		json
-//	@Param			Authorization	header		string	false	"Bearer {token} — optional"
 //	@Param			id				path		string	true	"Video ID"
 //	@Success		200				{object}	response.Response{data=videousecase.VideoStats}
 //	@Failure		404				{object}	response.Response	"Video not found"

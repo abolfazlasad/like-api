@@ -23,7 +23,7 @@ GO_IMAGE := golang:$(GO_VERSION)-alpine$(ALPINE_VERSION)
 all: docker-down swag-init docker-build docker-up
 
 test:
-	richgo test -v -cover -race -short ./...
+	richgo test -v -cover -race -short -count=1 ./...
 
 go-tidy:
 	docker run --rm \

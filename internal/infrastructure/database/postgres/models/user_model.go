@@ -28,14 +28,14 @@ func (m UserModel) ToEntity() entities.User {
 		Email:     m.Email,
 		Password:  m.Password,
 		Role:      entities.Role(m.Role),
-		CreatedAt: m.CreatedAt.Format(time.RFC3339),
+		CreatedAt: m.CreatedAt.Format(time.RFC3339Nano),
 	}
 }
 
 func UserModelFromEntity(u entities.User) UserModel {
 	var createdAt time.Time
 	if u.CreatedAt != "" {
-		createdAt, _ = time.Parse(time.RFC3339, u.CreatedAt)
+		createdAt, _ = time.Parse(time.RFC3339Nano, u.CreatedAt)
 	}
 
 	role := string(u.Role)

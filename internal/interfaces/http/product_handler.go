@@ -100,7 +100,6 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 //	@Description	Returns the single product linked to the given video, if any.
 //	@Tags			Products
 //	@Produce		json
-//	@Param			Authorization	header		string	false	"Bearer {token} — optional"
 //	@Param			id				path		string	true	"Video ID"
 //	@Success		200				{object}	response.Response{data=entities.Product}
 //	@Failure		404				{object}	response.Response	"Video or product not found"

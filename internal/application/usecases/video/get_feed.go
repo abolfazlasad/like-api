@@ -6,7 +6,7 @@ import (
 )
 
 // GetFeedInput holds pagination parameters.
-// Cursor is the RFC3339 created_at of the last item from the previous page.
+// Cursor is the RFC3339Nano created_at of the last item from the previous page.
 // An empty Cursor means "start from the beginning" (newest items first).
 type GetFeedInput struct {
 	Cursor string

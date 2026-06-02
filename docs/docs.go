@@ -210,7 +210,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "RFC3339 timestamp cursor from previous page",
+                        "description": "RFC3339Nano timestamp cursor from previous page",
                         "name": "cursor",
                         "in": "query"
                     },
@@ -459,12 +459,6 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Bearer {token} — optional, enables per-user features",
-                        "name": "Authorization",
-                        "in": "header"
-                    },
-                    {
-                        "type": "string",
                         "description": "Video ID",
                         "name": "id",
                         "in": "path",
@@ -582,12 +576,6 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Bearer {token} — optional",
-                        "name": "Authorization",
-                        "in": "header"
-                    },
-                    {
-                        "type": "string",
                         "description": "Video ID",
                         "name": "id",
                         "in": "path",
@@ -633,12 +621,6 @@ const docTemplate = `{
                 ],
                 "summary": "Get video analytics",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer {token} — optional",
-                        "name": "Authorization",
-                        "in": "header"
-                    },
                     {
                         "type": "string",
                         "description": "Video ID",
