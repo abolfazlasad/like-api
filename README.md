@@ -1,6 +1,71 @@
 # Like API — Video Commerce & Social Feed
 
-A RESTful API for a video-based social commerce platform, built with Go and Gin.
+A RESTful backend for a video-based social commerce platform, built with **Go** and **Gin** as part of a 48-hour technical challenge. The goal was to design a scalable, production-minded system that supports video feeds, social interactions, and shoppable products.
+
+---
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Makefile Commands](#makefile-commands)
+- [Tests](#tests)
+- [API Endpoints](#api-endpoints)
+- [Swagger Docs](#swagger-docs)
+- [Environment Variables](#environment-variables)
+- [Branch Info](#branch-info)
+- [TODO](#todo)
+
+---
+
+## Architecture
+
+The project follows **Clean Architecture** principles, organizing code into four distinct layers:
+
+```
+Domain → Application → Interface → Infrastructures
+```
+
+| Layer | Responsibility |
+|-------|---------------|
+| `domain/` | Core entities and repository interfaces — zero external dependencies |
+| `application/` | Use cases, DTOs, and business logic |
+| `interfaces/http/` | Thin Gin handlers that delegate to use cases |
+| `infrastructure/` | Concrete implementations: PostgreSQL, in-memory, middleware |
+
+### Why Clean Architecture?
+
+**Swappable dependencies.** The database, caching layer, or any external adapter can be replaced without touching business logic. A clear example in this project: switching between the PostgreSQL and in-memory implementations requires only a single environment variable (`DB_TYPE`). No use case code changes at all.
+
+**Testability.** Because business rules live in the `domain` and `application` layers — with no direct dependency on Gin, GORM, or any framework — they can be tested with pure Go and simple in-memory fakes. This led to clean, fast unit tests with no database setup required.
+
+**Separation of concerns.** Handlers are intentionally thin: they parse the request, call a use case, and map the output to an HTTP response. All real logic lives one layer deeper.
+
+### Database Design
+
+The PostgreSQL layer uses **two separate connection pools**: one for writes and one for reads. Write operations (inserts, updates, atomic counters) go through `writeDB`. Read operations (queries, existence checks) go through `readDB`.
+
+```
+writeDB  →  INSERT, UPDATE, DELETE
+readDB   →  SELECT, EXISTS checks, feed queries
+```
+
+This design is forward-looking: when the system needs to scale reads, a read replica can be introduced by simply pointing `readDB` at the replica — no application code changes required.
+
+Both PostgreSQL and an in-memory implementation are available. Switching between them is purely configuration (`DB_TYPE=postgres` or `DB_TYPE=memory`).
+
+### Scalability & Statelessness
+
+All request handling is **fully stateless**. No session state is stored on the server. Authentication relies entirely on self-contained JWTs. Because the application is stateless, horizontal scaling is straightforward — multiple instances can run behind a load balancer without sticky sessions or coordination.
+
+### Trade-offs
+
+The view deduplication window is currently an in-memory map (works for a single instance). In a multi-instance deployment this should be replaced with a Redis `SETEX` call. Like and view counters are written synchronously to PostgreSQL; under high traffic these should be buffered in Redis and flushed asynchronously via a background worker. The architecture is designed to accommodate both changes without modifying use case code.
+
+---
 
 ## Tech Stack
 
@@ -204,17 +269,18 @@ ADMIN_EMAIL=myadmin@example.com ADMIN_PASSWORD=MyPass123! go test -v ./admin/...
 |--------|------|-------------|
 | POST | `/api/v1/auth/register` | Register → JWT (role: user) |
 | POST | `/api/v1/auth/login` | Login → JWT |
+| GET  | `/api/v1/videos/:id` | Get single video |
+| GET  | `/api/v1/videos/:id/stats` | Views, likes, engagement rate |
 | GET  | `/api/v1/products/:id` | Get single product |
+| GET  | `/api/v1/videos/:id/product` | Product linked to a video |
 
 ### Optional Auth (JWT decoded when present, never rejected)
 
 | Method | Path | Description |
 |--------|------|-------------|
 | GET  | `/api/v1/feed?cursor=&limit=` | Cursor-paginated video feed |
-| GET  | `/api/v1/videos/:id` | Get single video |
-| GET  | `/api/v1/videos/:id/stats` | Views, likes, engagement rate |
-| GET  | `/api/v1/videos/:id/product` | Product linked to a video |
-| POST | `/api/v1/videos/:id/view` | Track view (with deduplication) |
+| POST | `/api/v1/videos/:id/view` | Track view (deduplication + user identification for future personalisation) |
+
 
 ### Protected (Bearer JWT — any role)
 
@@ -230,6 +296,8 @@ ADMIN_EMAIL=myadmin@example.com ADMIN_PASSWORD=MyPass123! go test -v ./admin/...
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v1/admin/users` | List all users |
+
+The only addition beyond the original specification is `GET /api/v1/admin/users`, which lists all registered users and is restricted to the `admin` role.
 
 ---
 
@@ -276,3 +344,17 @@ New changes and Clean Architecture refactoring are in the `develop` branch:
 ```bash
 git checkout develop
 ```
+
+---
+
+## TODO
+
+The following improvements were identified during development but could not be completed within the 48-hour time constraint. The architecture is designed so each of these can be added incrementally without restructuring existing code.
+
+- [ ] **Error sanitization** — Internal errors (database errors, GORM messages, etc.) are currently propagated directly to the HTTP response in some paths. These should be mapped to safe, generic user-facing messages so that internal implementation details are never leaked to the client.
+
+- [ ] **Redis caching for read queries** — Frequently accessed data (video metadata, feed pages, product lookups) hits the read PostgreSQL replica on every request. A Redis cache layer in front of the read repository implementations would dramatically reduce SQL load and response latency for popular content.
+
+- [ ] **Redis-backed like and view counters** — High-frequency write operations like likes and views currently go directly to PostgreSQL. A better approach is to absorb these in Redis (atomic `INCR`) and flush them to the main database asynchronously via a queue and background worker. This decouples hot write paths from the primary DB and makes the system far more resilient under traffic spikes.
+
+- [ ] **Improved feed mechanism** — The current feed is ordered strictly by `created_at`. A production feed should move toward a **recommendation-based model** that accounts for engagement signals (likes, views, recency, user affinity) rather than pure chronological order. This also addresses the cursor stability issue when content is ranked dynamically.
